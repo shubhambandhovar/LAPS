@@ -35,12 +35,19 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 3 — Institutional & Academic Structure Setup
-* **Objective**: Build CRUD management and validation for Academic Sessions (with **configurable start and end dates**), Classes, Sections, and Subjects.
+### Phase 3 — Academic Foundation & Master Data
+* **Objective**: Establish the core academic domain model and master data required by all future academic modules (`Student`, `Attendance`, `Homework`, `Timetable`, `Exam`, `Fees`). Includes CRUD, pagination, filtering, search, sorting, and validation for Academic Sessions (with configurable start/end dates and transaction-safe current session switching), configurable Classes (`Nursery` to `Class 10`), Sections, Subjects, Teacher profiles (excluding payroll/salary/leave), and foundational Teaching Assignments (`Teacher -> Academic Session -> Class -> Section -> Subject`).
 * **Dependencies**: Phase 2.
-* **Deliverables**: `AcademicSession`, `Class`, `Section`, `Subject` models and API endpoints; Admin UI configuration wizards.
-* **Acceptance Criteria**: Super Admin can create active school session with custom start/end dates, classes (`Pre-Primary` to `Class 10`), sections, and map subjects without sequence errors.
-* **Tests Required**: API CRUD tests for classes/sections/subjects; duplicate code constraint unit tests.
+* **Deliverables**:
+  * Zod validation schemas & TypeScript types in `@laps/shared`.
+  * `AcademicSession`, `Class`, `Section`, `Subject`, `Teacher`, and `TeachingAssignment` Mongoose models in `@laps/api`.
+  * REST API endpoints: `/api/v1/academic-sessions`, `/api/v1/classes`, `/api/v1/sections`, `/api/v1/subjects`, `/api/v1/teachers`, and `/api/v1/teaching-assignments`.
+  * Admin & ERP Portal management pages in `@laps/web` with search, filters, pagination, create/edit modals, confirmation dialogs, and loading/empty states.
+* **Acceptance Criteria**:
+  * Super Admin and School Admin can manage academic sessions, configurable classes, sections, subjects, teacher profiles, and teaching assignments.
+  * Teachers can view their own profile (`READ (Self)`), view their own teaching assignments (`READ (Self)`), and read active academic sessions, classes, sections, and subjects.
+  * Duplicate section, duplicate class, duplicate subject, duplicate teacher ID, and conflicting teaching assignments are rejected with structured validation errors.
+* **Tests Required**: Comprehensive Vitest suite covering duplicate class/section/subject/teacher validation, assignment conflict prevention, and RBAC authorization.
 
 ---
 
@@ -53,12 +60,12 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 5 — Teacher Management & Academic Teaching Assignments
-* **Objective**: Build Teacher and Staff profile records, and implement `TeachingAssignment` authorization scoping matrix.
+### Phase 5 — Administrative Staff & Department Scoping
+* **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
 * **Dependencies**: Phase 4.
-* **Deliverables**: `Teacher`, `Staff`, `TeachingAssignment` models and APIs; Teacher assignment matrix dashboard in Admin UI.
-* **Acceptance Criteria**: Admin can assign Teacher A to Class 10 Math; Teacher login profile correctly reflects teaching scopes.
-* **Tests Required**: Assignment uniqueness index test (preventing double-assigning primary subject teacher).
+* **Deliverables**: `Staff` model and APIs; administrative department directory.
+* **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
+* **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
 
 ---
 

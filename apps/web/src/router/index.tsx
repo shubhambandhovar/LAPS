@@ -9,6 +9,15 @@ import { UnauthorizedShell } from '../modules/portal/UnauthorizedShell';
 import { NotFoundShell } from '../modules/errors/NotFoundShell';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 
+import {
+  AcademicSessionsPage,
+  ClassesPage,
+  SectionsPage,
+  SubjectsPage,
+  TeachersPage,
+  TeachingAssignmentsPage,
+} from '../modules/academics';
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -39,6 +48,30 @@ const router = createBrowserRouter([
       {
         path: 'unauthorized',
         element: <UnauthorizedShell />,
+      },
+      {
+        path: 'academic-sessions',
+        element: <AcademicSessionsPage />,
+      },
+      {
+        path: 'classes',
+        element: <ClassesPage />,
+      },
+      {
+        path: 'sections',
+        element: <SectionsPage />,
+      },
+      {
+        path: 'subjects',
+        element: <SubjectsPage />,
+      },
+      {
+        path: 'teachers',
+        element: <TeachersPage />,
+      },
+      {
+        path: 'teaching-assignments',
+        element: <TeachingAssignmentsPage />,
       },
     ],
   },

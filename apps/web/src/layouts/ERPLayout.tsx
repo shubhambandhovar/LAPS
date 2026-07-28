@@ -9,6 +9,11 @@ import {
   Laptop,
   UserCheck,
   LayoutDashboard,
+  Calendar,
+  BookOpen,
+  Users,
+  Award,
+  GraduationCap,
 } from 'lucide-react';
 
 export const ERPLayout: React.FC = () => {
@@ -34,13 +39,69 @@ export const ERPLayout: React.FC = () => {
           </span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <Link
             to="/portal"
-            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg bg-indigo-600/20 text-indigo-300 font-medium text-sm transition-colors"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-indigo-600/20 text-indigo-300 font-medium text-sm transition-colors"
           >
             <LayoutDashboard className="w-4 h-4" />
             <span>Portal Overview</span>
+          </Link>
+
+          <div className="pt-3 pb-1 px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Academic Foundation
+          </div>
+
+          <Link
+            to="/portal/academic-sessions"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <Calendar className="w-4 h-4 text-indigo-400" />
+            <span>Academic Sessions</span>
+          </Link>
+
+          <Link
+            to="/portal/classes"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+            <span>Classes</span>
+          </Link>
+
+          <Link
+            to="/portal/sections"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <Users className="w-4 h-4 text-indigo-400" />
+            <span>Sections</span>
+          </Link>
+
+          <Link
+            to="/portal/subjects"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <Award className="w-4 h-4 text-indigo-400" />
+            <span>Global Subjects</span>
+          </Link>
+
+          <div className="pt-3 pb-1 px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Faculty & Assignments
+          </div>
+
+          <Link
+            to="/portal/teachers"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-400" />
+            <span>Teachers</span>
+          </Link>
+
+          <Link
+            to="/portal/teaching-assignments"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <UserCheck className="w-4 h-4 text-indigo-400" />
+            <span>Teaching Assignments</span>
           </Link>
         </nav>
 

@@ -137,55 +137,89 @@ Atomic authorization capabilities mapped to roles.
 ### 3.2. Institutional & Academic Organization Collections
 
 #### 5. `AcademicSession`
-Defines school academic years with **configurable start and end dates** (no hardcoded April–March assumption).
+Defines school academic years with **configurable start and end dates** (no hardcoded April–March assumption) and historical preservation.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String (Indexed)
-  * `name`: String (e.g., `"2026-2027"`)
+  * `name`: String (e.g., `"2026-2027"`, `"2027-2028"`)
   * `startDate`: Date (Configurable)
   * `endDate`: Date (Configurable)
   * `isCurrent`: Boolean (Default `false`)
+  * `status`: Enum (`"PLANNED" | "ACTIVE" | "ARCHIVED"`) (Default `"PLANNED"`)
   * `isPromotionLocked`: Boolean (Default `false`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, name: 1 }` (Unique)
-  * `{ schoolId: 1, isCurrent: 1 }`
+  * `{ name: 1 }` (Unique)
+  * `{ isCurrent: 1 }`
+  * `{ status: 1 }`
+* **Session Activation Rule**: When a session is activated (`status = "ACTIVE"`, `isCurrent = true`), the backend atomically unsets `isCurrent: false` on any previously active session within a MongoDB transaction.
+* **Soft-Delete Only & Archive Behavior**: Master data is **never physically deleted** from the database. Endpoints perform soft-deletion (`status: "ARCHIVED"`, setting `archivedBy` and `archivedAt`).
 
 #### 6. `Class`
-Academic grade levels.
+Academic grade levels configurable from Pre-Primary up to Class 10 (no hardcoded enum constraints).
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String (Indexed)
-  * `name`: String (e.g., `"Pre-Primary Nursery"`, `"Class 1"`, `"Class 10"`)
-  * `code`: String (e.g., `"PP-NUR"`, `"CLS-10"`)
-  * `orderSequence`: Number (For sorted UI rendering, e.g., 0 for Nursery, 10 for Class 10)
+  * `name`: String (e.g., `"Nursery"`, `"LKG"`, `"UKG"`, `"Class 1"`, `"Class 10"`)
+  * `code`: String (Auto-generated if not provided, e.g., `"CLS-NUR"`, `"CLS-LKG"`, `"CLS-01"`, `"CLS-10"`)
+  * `level`: Enum (`"PRE_PRIMARY" | "PRIMARY" | "MIDDLE" | "SECONDARY"`)
+  * `orderSequence`: Number (For sorted UI rendering, e.g., 1 for Nursery, 2 for LKG, 3 for UKG, 4 for Class 1 ... 13 for Class 10)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, code: 1 }` (Unique)
-  * `{ schoolId: 1, orderSequence: 1 }`
+  * `{ code: 1 }` (Unique)
+  * `{ name: 1 }` (Unique)
+  * `{ orderSequence: 1 }`
+  * `{ status: 1 }`
 
 #### 7. `Section`
-Subdivision of a class.
+Subdivision of a class scoped to an academic session (`Academic Session -> Class -> Section`).
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `classId`: ObjectId -> `Class` (Indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `classId`: ObjectId -> `Class` (Indexed, required)
   * `name`: String (e.g., `"A"`, `"B"`, `"C"`)
   * `roomNumber`: String (Optional)
   * `maxCapacity`: Number (Default `40`)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, classId: 1, name: 1 }` (Unique)
+  * `{ academicSessionId: 1, classId: 1, name: 1 }` (Unique — prevents duplicate section names within a class for a session)
+  * `{ classId: 1, status: 1 }`
 
 #### 8. `Subject`
-Curriculum subjects.
+Global master curriculum subjects prepared for Homework, Attendance, Timetable, and Marks integration. **Subject is a global master entity not bound directly to Class; class-subject mapping will be introduced separately.**
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
   * `name`: String (e.g., `"Mathematics"`, `"General Science"`, `"Hindi"`)
-  * `code`: String (e.g., `"MATH-10"`)
-  * `classId`: ObjectId -> `Class` (Indexed)
-  * `subjectType`: Enum (`"THEORY" | "PRACTICAL" | "CO_CURRICULAR"`)
+  * `code`: String (Auto-generated if not provided, e.g., `"SUB-MATH"`, `"SUB-SCI"`, `"SUB-ENG"`)
+  * `shortName`: String (e.g., `"MATH"`, `"SCI"`, `"ENG"`, `"HIN"`)
+  * `subjectType`: Enum (`"THEORY" | "PRACTICAL" | "CO_CURRICULAR"`) (Default `"THEORY"`)
   * `isOptional`: Boolean (Default `false`)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, classId: 1, code: 1 }` (Unique)
+  * `{ code: 1 }` (Unique global subject code)
+  * `{ name: 1 }` (Unique)
+  * `{ status: 1 }`
 
 ---
 
@@ -241,20 +275,32 @@ Parent/guardian biographical profile.
   * `{ guardianId: 1, isPrimaryGuardian: 1 }`
 
 #### 12. `Teacher`
-Academic teacher profile.
+Academic teacher profile linked to `User` account (Demographic & professional profile only — **does NOT include payroll, salary, or leave management fields**). `Teacher` is an academic profile entity, not the authentication account itself.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `employeeId`: String (Unique, e.g., `"LAPS-EMP-101"`)
+  * `userId`: ObjectId -> `User` (Indexed, optional sparse — links to authentication account)
+  * `employeeId`: String (Unique, auto-generated if not provided, e.g., `"TCH-0001"`, `"TCH-0002"`)
   * `firstName`: String
   * `lastName`: String
-  * `qualification`: String (e.g., `"B.Ed, M.Sc Mathematics"`)
+  * `email`: String (Indexed, unique sparse)
   * `phone`: String
-  * `email`: String
+  * `qualification`: String (e.g., `"B.Ed, M.Sc Mathematics"`)
+  * `designation`: Enum (`"PRT" | "TGT" | "PGT" | "HEAD_MISTRESS" | "ASSISTANT_TEACHER"`)
   * `joiningDate`: Date
   * `isClassTeacher`: Boolean (Default `false`)
+  * `photoUrl`: String (Optional avatar URL)
+  * `status`: Enum (`"ACTIVE" | "ON_LEAVE" | "INACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, employeeId: 1 }` (Unique)
+  * `{ employeeId: 1 }` (Unique)
+  * `{ email: 1 }` (Unique sparse)
+  * `{ userId: 1 }` (Unique sparse)
+  * `{ status: 1 }`
 
 #### 13. `Staff`
 Non-teaching administrative staff (Receptionist, Accountant, Librarian).
@@ -290,19 +336,26 @@ Non-teaching administrative staff (Receptionist, Accountant, Librarian).
   * `{ schoolId: 1, academicSessionId: 1, classId: 1, sectionId: 1, rollNumber: 1 }` (Unique roll number per class/section)
 
 #### 15. `TeachingAssignment`
-**CRITICAL ENTITY**: Maps authorization scopes for teachers per academic session.
+**CRITICAL FOUNDATIONAL ANCHOR**: Maps authorization scopes for teachers per academic session (`Teacher -> Academic Session -> Class -> Section -> Subject`). Every future module (Homework, Attendance, Marks, Timetable) relies on this entity for scoped access control.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `teacherId`: ObjectId -> `Teacher` (Indexed)
-  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
-  * `classId`: ObjectId -> `Class` (Indexed)
-  * `sectionId`: ObjectId -> `Section` (Indexed)
-  * `subjectId`: ObjectId -> `Subject` (Indexed)
-  * `isClassTeacher`: Boolean (Grants section-wide attendance and report card rights)
+  * `teacherId`: ObjectId -> `Teacher` (Indexed, required)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `classId`: ObjectId -> `Class` (Indexed, required)
+  * `sectionId`: ObjectId -> `Section` (Indexed, required)
+  * `subjectId`: ObjectId -> `Subject` (Indexed, required)
+  * `isClassTeacher`: Boolean (Default `false` — grants section-wide attendance and report card rights)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, academicSessionId: 1, classId: 1, sectionId: 1, subjectId: 1 }` (Unique — one primary subject teacher per section per session)
-  * `{ teacherId: 1, academicSessionId: 1 }`
+  * `{ academicSessionId: 1, classId: 1, sectionId: 1, subjectId: 1 }` (Unique for active assignments — ensures exactly one primary subject teacher per section per session)
+  * `{ academicSessionId: 1, teacherId: 1, classId: 1, sectionId: 1, subjectId: 1 }` (Unique — prevents assigning the same teacher twice to the same subject/section)
+  * `{ teacherId: 1, academicSessionId: 1, status: 1 }`
 
 ---
 

@@ -118,23 +118,42 @@ Standard collection endpoints accept uniform URL query parameters:
 * `POST /api/v1/auth/reset-password`: Complete password reset using OTP/token. Enforces **NIST SP 800-63B** system password policy (min 10 chars, max 128 chars, length over arbitrary complexity).
 * `GET  /api/v1/auth/me`: Retrieve currently authenticated user profile, active role, permissions, and session context. Never returns password hashes or refresh token hashes.
 
-### 5.2. Academic Sessions & Institutional Config (`/api/v1/academic-sessions`)
-* `GET  /api/v1/academic-sessions`: List all academic years.
-* `POST /api/v1/academic-sessions`: Create a new academic session with **configurable start and end dates**.
-* `PATCH /api/v1/academic-sessions/:id/activate`: Set session as current active school session.
-* `PATCH /api/v1/academic-sessions/:id/lock-promotions`: Lock/unlock end-of-term promotion wizard.
+### 5.2. Academic Sessions (`/api/v1/academic-sessions`)
+* `GET  /api/v1/academic-sessions`: Paginated list of academic years. Supports sorting (`sortBy=startDate`, `sortOrder=desc`) and status filtering (`?status=ACTIVE`).
+* `POST /api/v1/academic-sessions`: Create a new academic session (`name`, `startDate`, `endDate`, `status`). Validates non-overlapping dates and end > start.
+* `GET  /api/v1/academic-sessions/:id`: Retrieve session details.
+* `PATCH /api/v1/academic-sessions/:id`: Update session details or status (`PLANNED`, `ACTIVE`, `ARCHIVED`).
+* `PATCH /api/v1/academic-sessions/:id/activate`: Set session as current active school session (atomically unsetting previous active session in transaction).
+* `PATCH /api/v1/academic-sessions/:id/archive`: Archive academic session (soft delete; prevented if active or referenced by historical records).
 
-### 5.3. Classes, Sections & Subjects (`/api/v1/academics`)
-* `GET  /api/v1/academics/classes`: List all classes with their sections.
-* `POST /api/v1/academics/classes`: Create a class (`Pre-Primary`, `Class 1`..`Class 10`).
-* `POST /api/v1/academics/classes/:classId/sections`: Add a section (`A`, `B`, `C`).
-* `GET  /api/v1/academics/classes/:classId/subjects`: List subjects for a class.
-* `POST /api/v1/academics/subjects`: Create/map a new subject.
+### 5.3. Classes, Sections & Subjects (`/api/v1/classes`, `/api/v1/sections`, `/api/v1/subjects`)
+* `GET  /api/v1/classes`: Paginated list of classes (`Nursery` to `Class 10`). Supports sorting by `orderSequence` and search by `name`/`code`.
+* `POST /api/v1/classes`: Create a new class (`name`, `code` [optional, auto-generated if omitted], `level`, `orderSequence`, `status`). Enforces unique code constraint.
+* `GET  /api/v1/classes/:id`: Retrieve class details.
+* `PATCH /api/v1/classes/:id`: Update class properties.
+* `PATCH /api/v1/classes/:id/archive`: Soft-archive class (`status: "ARCHIVED"`, records `archivedBy` and `archivedAt`).
+* `GET  /api/v1/sections`: Paginated list of sections filtered by `?academicSessionId=&classId=`.
+* `POST /api/v1/sections`: Create section (`academicSessionId`, `classId`, `name`, `roomNumber`, `maxCapacity`). Enforces unique `(session + class + name)` constraint.
+* `GET  /api/v1/sections/:id`: Retrieve section details.
+* `PATCH /api/v1/sections/:id`: Update section properties.
+* `PATCH /api/v1/sections/:id/archive`: Soft-archive section (`status: "ARCHIVED"`).
+* `GET  /api/v1/subjects`: Paginated list of global master subjects. Supports search by `name`/`code`/`shortName` and filter by `subjectType` or `status`. **Not bound directly to Class.**
+* `POST /api/v1/subjects`: Create global master subject (`name`, `code` [optional, auto-generated if omitted], `shortName`, `subjectType`, `isOptional`).
+* `GET  /api/v1/subjects/:id`: Retrieve subject details.
+* `PATCH /api/v1/subjects/:id`: Update subject details.
+* `PATCH /api/v1/subjects/:id/archive`: Soft-archive subject (`status: "ARCHIVED"`).
 
-### 5.4. Teaching Assignments (`/api/v1/teaching-assignments`)
-* `GET  /api/v1/teaching-assignments`: List teacher assignments (filterable by session/class/teacher).
-* `POST /api/v1/teaching-assignments`: Assign a teacher to a `Session + Class + Section + Subject`.
-* `DELETE /api/v1/teaching-assignments/:id`: Revoke teaching assignment.
+### 5.4. Teachers & Teaching Assignments (`/api/v1/teachers`, `/api/v1/teaching-assignments`)
+* `GET  /api/v1/teachers`: Paginated list of teacher profiles. Supports full-text regex search (`?search=Sharma`), filter by `designation` or `status`, and sorting (`sortBy=lastName`).
+* `POST /api/v1/teachers`: Create teacher profile linked to `User` (`userId` [optional], `employeeId` [optional, auto-generated if omitted], `firstName`, `lastName`, `email`, `phone`, `qualification`, `designation`, `joiningDate`, `photoUrl`, `isClassTeacher`). **No payroll, salary, or leave management fields included**.
+* `GET  /api/v1/teachers/:id`: Retrieve teacher profile and assigned teaching scopes.
+* `PATCH /api/v1/teachers/:id`: Update teacher profile or status (`ACTIVE`, `ON_LEAVE`, `INACTIVE`, `ARCHIVED`).
+* `PATCH /api/v1/teachers/:id/archive`: Soft-archive teacher profile (transitions status to `ARCHIVED`, sets `archivedBy` and `archivedAt`).
+* `GET  /api/v1/teaching-assignments`: Paginated list of teaching assignments. Supports filtering by `?academicSessionId=&teacherId=&classId=&sectionId=&subjectId=`.
+* `POST /api/v1/teaching-assignments`: Assign a teacher to a `Session + Class + Section + Subject` with `isClassTeacher` flag. Enforces unique assignment constraints.
+* `GET  /api/v1/teaching-assignments/:id`: Retrieve teaching assignment details.
+* `PATCH /api/v1/teaching-assignments/:id`: Update assignment flags (`isClassTeacher`, `status`).
+* `PATCH /api/v1/teaching-assignments/:id/archive`: Soft-archive teaching assignment (`status: "ARCHIVED"`, records `archivedBy` and `archivedAt`).
 
 ### 5.5. Student & Guardian Relationship Management (`/api/v1/students`, `/api/v1/guardians`)
 * `GET  /api/v1/students`: Paginated list of students (filtered by active session/class/section).

@@ -8,3 +8,7 @@ export * from './Section';
 export * from './Subject';
 export * from './Teacher';
 export * from './TeachingAssignment';
+export * from './Student';
+export * from './Guardian';
+export * from './StudentGuardian';
+export * from './Enrollment';

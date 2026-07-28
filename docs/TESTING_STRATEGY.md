@@ -81,8 +81,38 @@ A mandatory requirement is testing **Negative Access Cases (Denial of Service & 
 
 ### 3.5. Academic Promotion Session Wizard (`TEST-FLOW-PROMO`)
 1. **Setup**: Student 001 is enrolled in `Session 2025-26, Class 1 - Sec A, roll 15`.
-2. **Promote Action**: Principal executes `POST /api/v1/students/001/promote` to target `Session 2026-27, Class 2 - Sec A, roll 12` (with configurable session dates).
+2. **Promote Action**: Principal executes `POST /api/v1/enrollments/promote` to target `Session 2026-27, Class 2 - Sec A, roll 12`.
 3. **Assert Historical Preservation**:
-   * Querying `Enrollment.findOne({ studentId: 001, academicSessionId: "2025-26" })` returns `Class 1` with status `"PROMOTED"`.
-   * Querying `Enrollment.findOne({ studentId: 001, academicSessionId: "2026-27" })` returns `Class 2` with status `"ACTIVE"`.
-   * Student's biographical profile (`Student.firstName`) remains unmodified.
+   * Querying `Enrollment.findOne({ studentId: 001, academicSessionId: "2025-26" })` returns `Class 1` with status `"PROMOTED"` and links `promotedToEnrollmentId`.
+   * Querying `Enrollment.findOne({ studentId: 001, academicSessionId: "2026-27" })` returns `Class 2` with status `"ACTIVE"` and links `previousEnrollmentId`.
+   * Student's independent biographical profile (`Student.firstName`, `admissionNumber`) remains unmodified.
+
+### 3.6. Student, Guardian & Enrollment Lifecycle Suite (`TEST-FLOW-STUDENT-ENROLLMENT` - Phase 4)
+1. **Admission Number Auto-Generation & Uniqueness**:
+   * Create student without admissionNumber -> Asserts sequential `LAPS-{YYYY}-0001` format.
+   * Create second student -> Asserts `LAPS-{YYYY}-0002`.
+   * Attempt creating student with duplicate `LAPS-{YYYY}-0001` -> Asserts HTTP `409 Conflict`.
+2. **Roll Number Auto-Generation & Uniqueness**:
+   * Enroll student in `(session, class, section)` without rollNumber -> Asserts roll number `1`.
+   * Enroll second student in same section -> Asserts roll number `2`.
+   * Attempt duplicate roll number in same section -> Asserts HTTP `409 Conflict`.
+3. **Unique Active Enrollment Constraint & Class Teacher Enrichment**:
+   * Attempt creating a second active enrollment for the same student in the same academic session -> Asserts HTTP `409 Conflict`.
+   * Query `GET /api/v1/enrollments/:id` -> Asserts response dynamically exposes `classTeacher` joined from active `TeachingAssignment` (`isClassTeacher: true`).
+4. **Normalized StudentGuardian & Primary Guardian Rule**:
+   * Link Father (`isPrimaryGuardian: true`) and Mother (`isPrimaryGuardian: false`) to student -> Asserts two distinct `StudentGuardian` records without embedding in `Student`.
+   * Update Mother to `isPrimaryGuardian: true` -> Asserts Father automatically transitions to `isPrimaryGuardian: false`.
+5. **Multi-Field Student Search**:
+   * Query `GET /api/v1/students?search=FatherName` -> Asserts student returned by joining through `StudentGuardian` -> `Guardian.name`.
+   * Query `GET /api/v1/students?search=GuardianPhone` -> Asserts student returned by matching linked guardian's phone number.
+6. **Archive Protection Guards & Simplified Student Status**:
+   * Attempt archiving a Student with an active enrollment -> Asserts HTTP `400 Bad Request` / `409 Conflict`.
+   * Attempt archiving a Guardian who is the sole linked guardian for an active student -> Asserts HTTP `400 Bad Request` / `409 Conflict`.
+   * Asserts `Student.status` remains `"ACTIVE"` while lifecycle states (`PROMOTED`, `TRANSFERRED`, `WITHDRAWN`, `ALUMNI`) are tracked exclusively in `Enrollment.enrollmentStatus`.
+7. **Transfer & Withdrawal Wizards**:
+   * Execute `POST /api/v1/enrollments/:id/transfer` -> Asserts enrollment status `"TRANSFERRED"` with remarks and date.
+   * Execute `POST /api/v1/enrollments/:id/withdraw` -> Asserts enrollment status `"WITHDRAWN"`.
+8. **RBAC Scope Enforcement**:
+   * Authenticate as Teacher -> Read student enrolled in assigned class/section -> Asserts HTTP `200 OK`.
+   * Authenticate as Teacher -> Attempt reading student outside assigned sections -> Asserts HTTP `403 Forbidden`.
+   * Authenticate as Teacher -> Attempt creating, promoting, transferring, or archiving student -> Asserts HTTP `403 Forbidden`.

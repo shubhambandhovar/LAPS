@@ -17,6 +17,12 @@ import {
   TeachersPage,
   TeachingAssignmentsPage,
 } from '../modules/academics';
+import {
+  StudentsPage,
+  StudentDetailPage,
+  GuardiansPage,
+  EnrollmentsPage,
+} from '../modules/students';
 
 const router = createBrowserRouter([
   {
@@ -72,6 +78,22 @@ const router = createBrowserRouter([
       {
         path: 'teaching-assignments',
         element: <TeachingAssignmentsPage />,
+      },
+      {
+        path: 'students',
+        element: <StudentsPage />,
+      },
+      {
+        path: 'students/:id',
+        element: <StudentDetailPage />,
+      },
+      {
+        path: 'guardians',
+        element: <GuardiansPage />,
+      },
+      {
+        path: 'enrollments',
+        element: <EnrollmentsPage />,
       },
     ],
   },

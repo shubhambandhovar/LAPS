@@ -8,10 +8,32 @@ import {
   Award,
   GraduationCap,
   UserCheck,
+  School,
 } from 'lucide-react';
 
 export const PortalHomeShell: React.FC = () => {
   const academicModules = [
+    {
+      title: 'Students Directory',
+      desc: 'Student profiles, admission numbers, dossiers, and emergency contacts.',
+      to: '/portal/students',
+      icon: GraduationCap,
+      color: 'bg-indigo-50 text-indigo-600',
+    },
+    {
+      title: 'Guardians Directory',
+      desc: 'Guardian profiles, emergency contact authorization, and student linking.',
+      to: '/portal/guardians',
+      icon: Users,
+      color: 'bg-blue-50 text-blue-600',
+    },
+    {
+      title: 'Enrollment Matrix',
+      desc: 'Academic session rosters, roll number assignment, and lifecycle wizards.',
+      to: '/portal/enrollments',
+      icon: School,
+      color: 'bg-emerald-50 text-emerald-600',
+    },
     {
       title: 'Academic Sessions',
       desc: 'Manage school years, start/end dates, and switch active current session.',
@@ -64,11 +86,10 @@ export const PortalHomeShell: React.FC = () => {
       >
         <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm mb-6">
           <p className="font-semibold">
-            ✅ Phase 3: Academic Foundation & Master Data Active
+            ✅ Phase 4: Student, Guardian & Enrollment Management Active
           </p>
           <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-            All academic master data entities are configured with strict single-school architecture,
-            global subjects, auto-generated codes, and soft archiving.
+            Complete student lifecycle management with dossier profiles, guardian linking, session-scoped enrollment matrix, and promotion/transfer/withdrawal wizards.
           </p>
         </div>
 

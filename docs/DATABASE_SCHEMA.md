@@ -226,53 +226,89 @@ Global master curriculum subjects prepared for Homework, Attendance, Timetable, 
 ### 3.3. Student, Guardian & Teacher Core Profiles
 
 #### 9. `Student`
-Immutable student demographic and biographical record.
+Independent student profile representing demographic and biographical information. **Do NOT store class or section inside Student** (`Enrollment` manages historical and active class membership).
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String (Indexed)
-  * `admissionNumber`: String (Unique institutional ID, e.g., `"LAPS-2026-0042"`)
-  * `admissionDate`: Date
-  * `firstName`: String
-  * `lastName`: String
-  * `dateOfBirth`: Date
+  * `admissionNumber`: String (Unique institutional ID, e.g., `"LAPS-2026-0001"`, auto-generated sequentially by year prefix — never ObjectId)
+  * `admissionDate`: Date (Default `Date.now`)
+  * `firstName`: String (Required)
+  * `middleName`: String (Optional)
+  * `lastName`: String (Required)
   * `gender`: Enum (`"MALE" | "FEMALE" | "OTHER"`)
-  * `bloodGroup`: String (Optional)
-  * `address`: { street, city: `"Gohad"`, district: `"Bhind"`, state: `"Madhya Pradesh"`, pincode }
-  * `primaryContactPhone`: String
-  * `medicalNotes`: String (Protected)
-  * `profilePhotoUrl`: String
+  * `dateOfBirth`: Date (Required)
+  * `bloodGroup`: String (Optional, e.g., `"O+"`, `"B+"`)
+  * `category`: Enum (`"GENERAL" | "OBC" | "SC" | "ST" | "OTHER"`) (Optional)
+  * `religion`: String (Optional)
+  * `nationality`: String (Default `"Indian"`)
+  * `photoUrl`: String (Optional avatar URL)
+  * `email`: String (Optional, unique sparse)
+  * `phone`: String (Optional)
+  * `address`: String (Required)
+  * `city`: String (Default `"Gohad"`)
+  * `state`: String (Default `"Madhya Pradesh"`)
+  * `country`: String (Default `"India"`)
+  * `pinCode`: String (Required)
+  * `emergencyContacts`: Array<{ name: String; relationship: String; phone: String }> (Required collection of emergency contacts)
+  * `documents`: Array<{ title: String; category?: String; fileUrl: String; uploadedAt: Date }> (Metadata array storing document titles and file URLs only — no binary storage)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"` — **Promotion, transfer, withdrawal, completion, and alumni status must be tracked ONLY in Enrollment**)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, admissionNumber: 1 }` (Unique)
-  * `{ schoolId: 1, firstName: 1, lastName: 1 }`
+  * `{ admissionNumber: 1 }` (Unique)
+  * `{ email: 1 }` (Unique sparse)
+  * `{ status: 1 }`
+  * `{ firstName: 1, lastName: 1 }`
+* **Reserved Extension Points (Documentation Only)**:
+  * Designed to seamlessly integrate with future **Student Documents** (transfer certificate scans, birth certificate verification), **Medical Records** (allergies, health checkup logs), and **Certificates** (bonafide, TC, graduation certificates) modules without schema breaking changes.
 
 #### 10. `Guardian`
-Parent/guardian biographical profile.
+Guardian profile supporting Father, Mother, Legal Guardian, or Other relatives.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `primaryName`: String
-  * `phone`: String (Unique within school)
-  * `email`: String (Optional)
-  * `occupation`: String
-  * `address`: Object
+  * `name`: String (Required)
+  * `relationship`: Enum (`"FATHER" | "MOTHER" | "LEGAL_GUARDIAN" | "OTHER"`) (Primary relationship category)
+  * `phone`: String (Required, indexed)
+  * `email`: String (Optional, unique sparse)
+  * `occupation`: String (Optional)
+  * `annualIncome`: Number (Optional)
+  * `photoUrl`: String (Optional)
+  * `sameAsStudentAddress`: Boolean (Default `false` — avoids unnecessary address duplication when guardian resides with student)
+  * `address`: String (Required if `sameAsStudentAddress` is false)
+  * `emergencyContacts`: Array<{ name: String; relationship: String; phone: String }> (Collection of emergency contacts)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, phone: 1 }` (Unique)
+  * `{ phone: 1 }`
+  * `{ email: 1 }` (Unique sparse)
+  * `{ status: 1 }`
 
 #### 11. `StudentGuardian` (Normalized Relationship Model)
-**CRITICAL ENTITY**: Normalized join entity replacing array duplication, linking students to guardians with rich relationship metadata and granular permissions.
+**CRITICAL ENTITY**: Normalized join entity linking `Student` and `Guardian` without array embedding. Supports Many-to-Many relationships (`One Student -> Many Guardians`, `One Guardian -> Many Students`).
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String (Indexed)
   * `studentId`: ObjectId -> `Student` (Indexed, required)
   * `guardianId`: ObjectId -> `Guardian` (Indexed, required)
-  * `relationshipType`: Enum (`"FATHER" | "MOTHER" | "LEGAL_GUARDIAN" | "OTHER"`)
-  * `isPrimaryGuardian`: Boolean (Default `true` for first guardian)
-  * `canPickup`: Boolean (Default `true`)
-  * `canReceiveFinancialNotices`: Boolean (Default `true`)
-  * `canViewAcademicReports`: Boolean (Default `true`)
+  * `relationship`: Enum (`"FATHER" | "MOTHER" | "LEGAL_GUARDIAN" | "OTHER"`) (Required)
+  * `isPrimaryGuardian`: Boolean (Default `false` — exactly one primary guardian per student enforced)
+  * `pickupPermission`: Boolean (Default `true`)
+  * `emergencyContactPermission`: Boolean (Default `true`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
   * `{ studentId: 1, guardianId: 1 }` (Unique — prevents duplicate relationship rows)
-  * `{ guardianId: 1, isPrimaryGuardian: 1 }`
+  * `{ studentId: 1, isPrimaryGuardian: 1 }` (Indexed for fast primary guardian lookup)
+  * `{ guardianId: 1 }`
 
 #### 12. `Teacher`
 Academic teacher profile linked to `User` account (Demographic & professional profile only — **does NOT include payroll, salary, or leave management fields**). `Teacher` is an academic profile entity, not the authentication account itself.
@@ -320,20 +356,29 @@ Non-teaching administrative staff (Receptionist, Accountant, Librarian).
 ### 3.4. Enrollment & Teaching Assignment Architecture (Historical Core)
 
 #### 14. `Enrollment`
-**CRITICAL ENTITY**: Represents a student's membership in a specific class/section for a single academic session.
+**CRITICAL ENTITY**: Represents where a student studies for a single academic session (`Student -> Academic Session -> Class -> Section -> Roll Number -> Enrollment Status`). **Never overwrite history** — every academic year creates a new `Enrollment` record.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `studentId`: ObjectId -> `Student` (Indexed)
-  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
-  * `classId`: ObjectId -> `Class` (Indexed)
-  * `sectionId`: ObjectId -> `Section` (Indexed)
-  * `rollNumber`: Number
-  * `enrollmentStatus`: Enum (`"ACTIVE" | "PROMOTED" | "DETAINED" | "TRANSFERRED" | "ALUMNI"`)
-  * `promotedToEnrollmentId`: ObjectId -> `Enrollment` (Self-reference for tracking promotion chain)
+  * `studentId`: ObjectId -> `Student` (Indexed, required)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `classId`: ObjectId -> `Class` (Indexed, required)
+  * `sectionId`: ObjectId -> `Section` (Indexed, required)
+  * `rollNumber`: Number (Unique per academic session + class + section)
+  * `enrollmentDate`: Date (Default `Date.now`)
+  * `enrollmentStatus`: Enum (`"ACTIVE" | "PROMOTED" | "TRANSFERRED" | "WITHDRAWN" | "COMPLETED" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `promotedToEnrollmentId`: ObjectId -> `Enrollment` (Optional self-reference for tracking promotion chain forward)
+  * `previousEnrollmentId`: ObjectId -> `Enrollment` (Optional self-reference for tracking historical chain backward)
+  * `remarks`: String (Optional notes on transfer/withdrawal/promotion)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
 * **Indexes**:
-  * `{ schoolId: 1, academicSessionId: 1, studentId: 1 }` (Unique — a student can only have one active enrollment per session)
-  * `{ schoolId: 1, academicSessionId: 1, classId: 1, sectionId: 1, rollNumber: 1 }` (Unique roll number per class/section)
+  * `{ academicSessionId: 1, studentId: 1 }` (Unique — a student can have at most one enrollment per academic session)
+  * `{ academicSessionId: 1, classId: 1, sectionId: 1, rollNumber: 1 }` (Unique — prevents duplicate roll numbers in the same section of a session)
+  * `{ studentId: 1, enrollmentStatus: 1 }`
 
 #### 15. `TeachingAssignment`
 **CRITICAL FOUNDATIONAL ANCHOR**: Maps authorization scopes for teachers per academic session (`Teacher -> Academic Session -> Class -> Section -> Subject`). Every future module (Homework, Attendance, Marks, Timetable) relies on this entity for scoped access control.

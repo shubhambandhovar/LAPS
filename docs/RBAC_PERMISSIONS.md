@@ -52,11 +52,12 @@ graph TD
 ## 3. Granular Resource Scoping Rules (Preventing IDOR)
 
 ### 3.1. Teacher Scoping (`ASSIGNED_CLASSES_SUBJECTS`)
-When a Teacher requests to mark attendance (`POST /api/v1/attendance`) or enter marks (`POST /api/v1/marks`), the middleware executes:
-1. Extract `classId`, `sectionId`, and `subjectId` from the payload.
-2. Query `TeachingAssignment.findOne({ teacherId: req.user.profileRef, academicSessionId: req.currentSession._id, classId, sectionId, subjectId })`.
-3. If no matching assignment is found, the backend throws `403 Forbidden: User is not authorized for this academic scope`.
-4. **Class Teacher Exception**: Marking daily class attendance or compiling a terminal `ReportCard` requires `TeachingAssignment.isClassTeacher === true` for that section.
+When a Teacher requests to mark attendance (`POST /api/v1/attendance`), enter marks (`POST /api/v1/marks`), or view students (`GET /api/v1/students` / `GET /api/v1/enrollments`), the middleware executes:
+1. Extract target `classId` and `sectionId` from the request filters or target student enrollment.
+2. Query `TeachingAssignment.find({ teacherId: req.user.profileRef, academicSessionId: req.currentSession._id, status: 'ACTIVE' })` to retrieve authorized section IDs.
+3. **Student Directory & Profiles Read-Only Access (Phase 4)**: A Teacher can only view `Student`, `Guardian`, `StudentGuardian`, and `Enrollment` records where the student has an active enrollment in one of the teacher's assigned `(classId, sectionId)` scopes. Any attempt to read students outside these sections returns `403 Forbidden`. Teachers have **no write, archive, promote, transfer, or withdraw permissions** for student master records.
+4. **Marking Attendance / Marks**: For operational entry, query `TeachingAssignment.findOne({ teacherId: req.user.profileRef, academicSessionId: req.currentSession._id, classId, sectionId, subjectId })`.
+5. **Class Teacher Exception**: Marking daily class attendance or compiling a terminal `ReportCard` requires `TeachingAssignment.isClassTeacher === true` for that section.
 
 ### 3.2. Parent / Guardian Scoping (`OWN_CHILDREN_ONLY` via `StudentGuardian`)
 When a Guardian requests a child's fee receipt (`GET /api/v1/fees/receipts/:receiptId`) or report card:

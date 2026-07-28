@@ -16,6 +16,7 @@ declare global {
     interface Request {
       user?: AuthenticatedRequestUser;
       id?: string;
+      teacherAssignedSectionIds?: string[];
     }
   }
 }

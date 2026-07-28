@@ -7,6 +7,10 @@ import sectionRoutes from './sections.routes';
 import subjectRoutes from './subjects.routes';
 import teacherRoutes from './teachers.routes';
 import teachingAssignmentRoutes from './teachingAssignments.routes';
+import studentRoutes from './students.routes';
+import guardianRoutes from './guardians.routes';
+import studentGuardianRoutes from './studentGuardians.routes';
+import enrollmentRoutes from './enrollments.routes';
 
 const router = Router();
 
@@ -23,5 +27,11 @@ router.use('/sections', sectionRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/teachers', teacherRoutes);
 router.use('/teaching-assignments', teachingAssignmentRoutes);
+
+// Phase 4: Mount Student, Guardian & Enrollment Management endpoints
+router.use('/students', studentRoutes);
+router.use('/guardians', guardianRoutes);
+router.use('/student-guardians', studentGuardianRoutes);
+router.use('/enrollments', enrollmentRoutes);
 
 export default router;

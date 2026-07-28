@@ -155,15 +155,34 @@ Standard collection endpoints accept uniform URL query parameters:
 * `PATCH /api/v1/teaching-assignments/:id`: Update assignment flags (`isClassTeacher`, `status`).
 * `PATCH /api/v1/teaching-assignments/:id/archive`: Soft-archive teaching assignment (`status: "ARCHIVED"`, records `archivedBy` and `archivedAt`).
 
-### 5.5. Student & Guardian Relationship Management (`/api/v1/students`, `/api/v1/guardians`)
-* `GET  /api/v1/students`: Paginated list of students (filtered by active session/class/section).
-* `POST /api/v1/students`: Enroll a new student (creates `Student`, `Guardian`, `StudentGuardian` join row, and initial `Enrollment`).
-* `GET  /api/v1/students/:studentId`: Complete student dossier (profile, enrollment history, linked guardians).
-* `POST /api/v1/students/:studentId/guardians`: Link a guardian to a student via `StudentGuardian` (specifying relationship type & permissions).
-* `PATCH /api/v1/students/:studentId/guardians/:guardianId`: Update `StudentGuardian` relationship permissions or primary flag.
-* `PATCH /api/v1/students/:studentId`: Update biographical or contact details.
-* `POST /api/v1/students/:studentId/promote`: Promote student enrollment to a target class/session.
-* `GET  /api/v1/guardians/:guardianId/children`: List all active child enrollments for a guardian via `StudentGuardian`.
+### 5.5. Student, Guardian & Enrollment Management (`/api/v1/students`, `/api/v1/guardians`, `/api/v1/student-guardians`, `/api/v1/enrollments`)
+* **Students (`/api/v1/students`)**:
+  * `GET  /api/v1/students`: Paginated list of students. Supports filtering (`status`, `gender`, `category`) and sorting. **Expanded Multi-Field Search (`?search=`)**: Searches across `admissionNumber`, student full name (`firstName`, `lastName`), linked guardian name (via `StudentGuardian` -> `Guardian.name`), and phone number (`Student.phone` or `Guardian.phone`).
+  * `POST /api/v1/students`: Create new independent student profile (`admissionNumber` [optional, auto-generated `LAPS-YYYY-XXXX` if omitted], `firstName`, `middleName`, `lastName`, `gender`, `dateOfBirth`, `bloodGroup`, `category`, `religion`, `nationality`, `photoUrl`, `email`, `phone`, `address`, `city`, `state`, `country`, `pinCode`, `emergencyContacts`, `documents` metadata array, `status: "ACTIVE" | "ARCHIVED"`). **No class or section stored inside Student.**
+  * `GET  /api/v1/students/:id`: Complete student dossier (profile, linked guardians via `StudentGuardian`, chronological enrollment history).
+  * `PATCH /api/v1/students/:id`: Update student demographic, emergency contact, or address properties.
+  * `PATCH /api/v1/students/:id/archive`: Soft-archive student profile (`status: "ARCHIVED"`, records `archivedBy` and `archivedAt`). **Archive Protection Rule**: Prevents archiving (`400 Bad Request` / `409 Conflict`) if the student has an active enrollment (`enrollmentStatus: "ACTIVE"`).
+  * `PATCH /api/v1/students/:id/status`: Transition student status (`"ACTIVE" | "ARCHIVED"` only — **Promotion, transfer, withdrawal, completion, and alumni status are tracked ONLY in Enrollment**).
+* **Guardians (`/api/v1/guardians`)**:
+  * `GET  /api/v1/guardians`: Paginated list of guardian profiles. Supports search by `name`/`phone`/`email`.
+  * `POST /api/v1/guardians`: Create guardian profile (`name`, `relationship` default category, `phone`, `email`, `occupation`, `annualIncome`, `photoUrl`, `sameAsStudentAddress`, `address`, `emergencyContacts`, `status`).
+  * `GET  /api/v1/guardians/:id`: Retrieve guardian profile and linked students via `StudentGuardian`.
+  * `PATCH /api/v1/guardians/:id`: Update guardian profile properties.
+  * `PATCH /api/v1/guardians/:id/archive`: Soft-archive guardian profile (`status: "ARCHIVED"`). **Archive Protection Rule**: Prevents archiving (`400 Bad Request` / `409 Conflict`) if the guardian is the sole linked guardian (`StudentGuardian` count == 1) for a student who has an active enrollment.
+* **Student-Guardians (`/api/v1/student-guardians`)**:
+  * `GET  /api/v1/student-guardians`: List normalized student-guardian relationships filtered by `?studentId=` or `?guardianId=`.
+  * `POST /api/v1/student-guardians`: Link a `Student` and `Guardian` (`studentId`, `guardianId`, `relationship`, `isPrimaryGuardian`, `pickupPermission`, `emergencyContactPermission`). Enforces single primary guardian per student.
+  * `PATCH /api/v1/student-guardians/:id`: Update relationship type, primary designation, or pickup/emergency permissions.
+  * `DELETE /api/v1/student-guardians/:id`: Unlink guardian from student (hard delete join record or soft archive).
+* **Enrollments (`/api/v1/enrollments`)**:
+  * `GET  /api/v1/enrollments`: Paginated list of enrollments filtered by `?academicSessionId=&classId=&sectionId=&studentId=&enrollmentStatus=`. **Dynamic Class Teacher Enrichment**: Responses automatically expose the current section's class teacher (`classTeacher: { id, firstName, lastName, employeeId }`) by joining through the active `TeachingAssignment` (`isClassTeacher: true`) without duplicating teacher data inside `Enrollment`.
+  * `POST /api/v1/enrollments`: Enroll a student into an academic session, class, and section (`studentId`, `academicSessionId`, `classId`, `sectionId`, `rollNumber` [optional, auto-generated sequentially if omitted]). Enforces unique active enrollment per student per session and unique roll number per section.
+  * `GET  /api/v1/enrollments/:id`: Retrieve enrollment details, promotion chain, and dynamically populated current class teacher.
+  * `PATCH /api/v1/enrollments/:id`: Update enrollment section or roll number.
+  * `PATCH /api/v1/enrollments/:id/archive`: Soft-archive enrollment (`enrollmentStatus: "ARCHIVED"`).
+  * `POST /api/v1/enrollments/promote`: Promotion Wizard endpoint — creates a new enrollment in target session/class/section, sets old enrollment `enrollmentStatus: "PROMOTED"` and links `promotedToEnrollmentId`.
+  * `POST /api/v1/enrollments/:id/transfer`: Transfer Wizard endpoint — marks enrollment `enrollmentStatus: "TRANSFERRED"` with remarks and transfer date.
+  * `POST /api/v1/enrollments/:id/withdraw`: Withdrawal Wizard endpoint — marks enrollment `enrollmentStatus: "WITHDRAWN"` with remarks.
 
 ### 5.6. Attendance Management (`/api/v1/attendance`)
 * `GET  /api/v1/attendance/sheet`: Retrieve daily class roster with attendance status for a date.

@@ -404,10 +404,228 @@ Non-teaching administrative staff (Receptionist, Accountant, Librarian).
 
 ---
 
-### 3.5. Academic Operations & Classroom Collections
+### 3.5. Curriculum, Timetable & Academic Calendar Collections (Phase 5)
 
-#### 16. `Attendance`
+#### 16. `AcademicTerm`
+Optional academic term layer beneath Academic Session (`Academic Session -> Academic Term`) supporting future examination blocks, term-wise grading, and report card compilation.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `name`: String (e.g., `"Term 1"`, `"Term 2"`, `"Mid-Term Semester"`, `"Annual Semester"`)
+  * `code`: String (e.g., `"TRM-1"`, `"TRM-2"`)
+  * `startDate`: String (`"YYYY-MM-DD"`, required)
+  * `endDate`: String (`"YYYY-MM-DD"`, required)
+  * `orderSequence`: Number (Required, e.g., 1 for Term 1, 2 for Term 2)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ academicSessionId: 1, code: 1 }` (Unique)
+  * `{ academicSessionId: 1, orderSequence: 1 }`
+  * `{ status: 1 }`
+
+#### 17. `ClassSubject`
+Maps global master `Subject` records to a specific `Class` within an `AcademicSession`. Supports mandatory/optional subject distinction, display ordering, curriculum period constraints, and Teacher Assignment Compatibility validation.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `classId`: ObjectId -> `Class` (Indexed, required)
+  * `subjectId`: ObjectId -> `Subject` (Indexed, required)
+  * `isMandatory`: Boolean (Default `true` — required for all students in class)
+  * `isOptional`: Boolean (Default `false` — elective subject)
+  * `subjectGroup`: String (Optional, e.g., `"ELECTIVE_GRP_A"` for grouping mutually exclusive elective subjects)
+  * `minPeriodsPerWeek`: Number (Optional — curriculum constraint for minimum required weekly teaching periods)
+  * `maxPeriodsPerWeek`: Number (Optional — curriculum constraint for maximum allowed weekly teaching periods)
+  * `orderSequence`: Number (Default `1` — controls UI rendering order)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ academicSessionId: 1, classId: 1, subjectId: 1 }` (Unique — prevents duplicate mapping of the same subject to a class in a session)
+  * `{ classId: 1, orderSequence: 1 }`
+  * `{ status: 1 }`
+
+#### 18. `Room`
+Dedicated institutional room and laboratory catalog replacing free-text room numbers.
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String (e.g., `"Room 101"`, `"Chemistry Lab"`, `"Auditorium"`, `"Sports Field"`)
+  * `code`: String (Unique, e.g., `"RM-101"`, `"LAB-CHEM"`, `"AUD-01"`)
+  * `capacity`: Number (Default `40`)
+  * `building`: String (Optional, e.g., `"Main Wing"`, `"Science Block"`)
+  * `floor`: String (Optional, e.g., `"Ground Floor"`, `"First Floor"`)
+  * `roomType`: Enum (`"CLASSROOM" | "LAB" | "AUDITORIUM" | "SPORTS" | "OTHER"`) (Default `"CLASSROOM"`)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ code: 1 }` (Unique)
+  * `{ name: 1 }` (Unique)
+  * `{ status: 1 }`
+
+#### 19. `BellSchedule`
+Configurable bell schedules within an academic session supporting Regular, Examination, Half-Day, and Special Event schedules. Supports global assignment, class-scoped assignment, and date-range validity.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `name`: String (e.g., `"Regular Mon-Fri"`, `"Examination Schedule"`, `"Half-Day Saturday"`, `"Winter Timings"`)
+  * `scheduleType`: Enum (`"REGULAR" | "EXAM" | "HALF_DAY" | "SPECIAL_EVENT"`) (Default `"REGULAR"`)
+  * `scopeType`: Enum (`"GLOBAL" | "CLASS"`) (Default `"GLOBAL"`)
+  * `targetClassIds`: Array<ObjectId -> `Class`> (Optional, required when `scopeType === "CLASS"`)
+  * `validFrom`: String (Optional `"YYYY-MM-DD"` date range start)
+  * `validTo`: String (Optional `"YYYY-MM-DD"` date range end)
+  * `isDefault`: Boolean (Default `false` — automatically toggles off other defaults for the session when enabled)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ academicSessionId: 1, name: 1 }` (Unique)
+  * `{ academicSessionId: 1, isDefault: 1 }`
+  * `{ academicSessionId: 1, scopeType: 1, validFrom: 1, validTo: 1 }`
+  * `{ status: 1 }`
+
+#### 20. `TimetablePeriod`
+Individual period and break interval definitions scoped to a `BellSchedule`.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `bellScheduleId`: ObjectId -> `BellSchedule` (Indexed, required)
+  * `name`: String (e.g., `"Period 1"`, `"Morning Assembly"`, `"Lunch Break"`, `"Period 8"`)
+  * `sequence`: Number (Required, positive integer e.g., 1, 2, 3...)
+  * `startTime`: String (`"HH:MM"`, 24-hr format, e.g., `"08:00"`)
+  * `endTime`: String (`"HH:MM"`, 24-hr format, e.g., `"08:45"`)
+  * `isBreak`: Boolean (Default `false` — indicates non-teaching interval like lunch or assembly)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ bellScheduleId: 1, sequence: 1 }` (Unique — enforces strict sequential period numbering)
+  * `{ bellScheduleId: 1, startTime: 1, endTime: 1 }` (Indexed for time-overlap detection)
+  * `{ status: 1 }`
+
+#### 21. `Timetable` (Conflict-Checked Versioned Weekly Schedule Matrix)
+Weekly timetable slot assignment linking a Section, Day of Week, Period, ClassSubject, Room, and Teacher (`TeachingAssignment`). Implements automated conflict prevention, draft/published versioning, and teacher workload computation.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `classId`: ObjectId -> `Class` (Indexed, required)
+  * `sectionId`: ObjectId -> `Section` (Indexed, required)
+  * `dayOfWeek`: Enum (`"MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY"`) (Required)
+  * `timetablePeriodId`: ObjectId -> `TimetablePeriod` (Indexed, required)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Indexed, required)
+  * `subjectId`: ObjectId -> `Subject` (Indexed, required — denormalized for fast query)
+  * `teachingAssignmentId`: ObjectId -> `TeachingAssignment` (Indexed, required — validates teacher-subject-section authorization)
+  * `teacherId`: ObjectId -> `Teacher` (Indexed, required — denormalized for teacher conflict detection)
+  * `roomId`: ObjectId -> `Room` (Indexed, optional — links to dedicated `Room` catalog)
+  * `status`: Enum (`"DRAFT" | "PUBLISHED" | "ARCHIVED"`) (Default `"DRAFT"` — Teachers can only access `PUBLISHED` timetables)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes & Conflict Prevention Guards (for active/published rows)**:
+  * `{ academicSessionId: 1, sectionId: 1, dayOfWeek: 1, timetablePeriodId: 1, status: 1 }` (Unique for `DRAFT`/`PUBLISHED` — **Section Conflict Prevention**: prevents double-booking a section with two different subjects/teachers at the same period)
+  * `{ academicSessionId: 1, teacherId: 1, dayOfWeek: 1, timetablePeriodId: 1, status: 1 }` (Unique for `DRAFT`/`PUBLISHED` — **Teacher Conflict Prevention**: prevents assigning the same teacher to two different sections/rooms at the same period)
+  * `{ academicSessionId: 1, roomId: 1, dayOfWeek: 1, timetablePeriodId: 1, status: 1 }` (Unique sparse for `DRAFT`/`PUBLISHED` — **Room Conflict Prevention**: prevents booking the same room for two different classes at the same period)
+  * `{ teacherId: 1, academicSessionId: 1, status: 1 }` (Indexed for fast `MY_TIMETABLE_ONLY` teacher queries and computed workload metrics)
+
+#### 22. `AcademicCalendarEvent`
+Institutional calendar events supporting working days, school holidays, half days, exam blocks, vacation periods, special celebrations, and recurring schedules.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `title`: String (e.g., `"Independence Day"`, `"Mid-Term Exam Week"`, `"Annual Sports Day"`, `"Winter Vacation"`)
+  * `eventType`: Enum (`"HOLIDAY" | "HALF_DAY" | "EXAM_BLOCK" | "VACATION" | "SPECIAL_EVENT" | "EMERGENCY_CLOSURE" | "WORKING_DAY"`) (Required)
+  * `startDate`: String (`"YYYY-MM-DD"`, required, indexed)
+  * `endDate`: String (`"YYYY-MM-DD"`, required, indexed)
+  * `isWorkingDay`: Boolean (Default `false` for holiday/vacation, `true` for working day/special event)
+  * `isRecurring`: Boolean (Default `false`)
+  * `recurrenceRule`: Object (Optional `{ frequency: "WEEKLY" | "MONTHLY" | "YEARLY", interval: Number, count: Number, untilDate: String }`)
+  * `appliesToAllClasses`: Boolean (Default `true`)
+  * `targetClassIds`: Array<ObjectId -> `Class`> (Optional, for grade-scoped events/exam blocks)
+  * `description`: String (Optional)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ academicSessionId: 1, startDate: 1, endDate: 1 }`
+  * `{ eventType: 1, status: 1 }`
+
+#### 23. `WorkingDayRule`
+Academic session working day rules supporting Monday-Friday, Monday-Saturday, custom schedules, half-days, and emergency closure overrides.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required, unique per session)
+  * `workingDaysPattern`: Enum (`"MON_TO_FRI" | "MON_TO_SAT" | "CUSTOM"`) (Default `"MON_TO_SAT"`)
+  * `customWorkingDays`: Array<Enum (`"MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY"`)> (Optional, used when `"CUSTOM"`)
+  * `halfDaysOfWeek`: Array<Enum (`"MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY"`)> (Optional, e.g., Saturday as half-day)
+  * `emergencyClosureActive`: Boolean (Default `false` — overrides all working days when active)
+  * `emergencyClosureReason`: String (Optional)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ academicSessionId: 1 }` (Unique — one working day configuration per academic session)
+
+#### 24. `Holiday`
+Dedicated institutional holiday catalog supporting National, State, School, Optional holidays, and emergency closures.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, required)
+  * `title`: String (e.g., `"Republic Day"`, `"Diwali"`, `"MP State Foundation Day"`, `"Collector Declared Holiday"`)
+  * `holidayType`: Enum (`"NATIONAL" | "STATE" | "SCHOOL" | "OPTIONAL" | "EMERGENCY_CLOSURE"`) (Required)
+  * `startDate`: String (`"YYYY-MM-DD"`, required, indexed)
+  * `endDate`: String (`"YYYY-MM-DD"`, required, indexed)
+  * `isOptionalHoliday`: Boolean (Default `false`)
+  * `affectsAttendance`: Boolean (Default `true` — automatically marks calendar as official non-working holiday for attendance calculation)
+  * `description`: String (Optional)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`) (Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date (Default `Date.now`)
+  * `updatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ academicSessionId: 1, startDate: 1, endDate: 1 }`
+  * `{ holidayType: 1, status: 1 }`
+
+---
+
+### 3.6. Academic Operations & Classroom Collections (Future Phases)
+
+#### 25. `Attendance`
 Daily attendance record per student enrollment.
+* **Future Attendance Integration Contract (Phase 7)**: Attendance marking does not maintain its own schedule or calendar. Daily and period-wise attendance must dynamically consume published Timetable slots (`status: "PUBLISHED"`, to determine periods and subjects), active TeachingAssignment scopes (to verify authorized teacher), and active Enrollment records (to determine student roster), cross-referenced with Holiday and WorkingDayRule calendar status.
 * **Fields**:
   * `_id`: ObjectId
   * `schoolId`: String
@@ -424,7 +642,7 @@ Daily attendance record per student enrollment.
   * `{ schoolId: 1, enrollmentId: 1, date: 1 }` (Unique — one attendance mark per student per day)
   * `{ schoolId: 1, academicSessionId: 1, classId: 1, sectionId: 1, date: 1 }`
 
-#### 17. `Homework`
+#### 26. `Homework`
 Homework assigned by an authorized teacher.
 * **Fields**:
   * `_id`: ObjectId
@@ -445,7 +663,7 @@ Homework assigned by an authorized teacher.
   * `{ schoolId: 1, classId: 1, sectionId: 1, status: 1, dueDate: 1 }`
   * `{ teacherId: 1, academicSessionId: 1 }`
 
-#### 18. `HomeworkSubmission`
+#### 27. `HomeworkSubmission`
 Student submission record for a homework assignment.
 * **Fields**:
   * `_id`: ObjectId
@@ -460,7 +678,7 @@ Student submission record for a homework assignment.
 * **Indexes**:
   * `{ homeworkId: 1, enrollmentId: 1 }` (Unique)
 
-#### 19. `StudyMaterial`
+#### 28. `StudyMaterial`
 Downloadable learning notes and study resources.
 * **Fields**:
   * `_id`: ObjectId
@@ -476,30 +694,11 @@ Downloadable learning notes and study resources.
 * **Indexes**:
   * `{ schoolId: 1, classId: 1, subjectId: 1 }`
 
-#### 20. `Timetable`
-Class weekly schedule matrix.
-* **Fields**:
-  * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession`
-  * `classId`: ObjectId -> `Class`
-  * `sectionId`: ObjectId -> `Section`
-  * `dayOfWeek`: Enum (`"MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY"`)
-  * `periodNumber`: Number (1 to 8)
-  * `startTime`: String (`"08:30"`)
-  * `endTime`: String (`"09:15"`)
-  * `subjectId`: ObjectId -> `Subject`
-  * `teacherId`: ObjectId -> `Teacher`
-  * `room`: String
-* **Indexes**:
-  * `{ schoolId: 1, academicSessionId: 1, classId: 1, sectionId: 1, dayOfWeek: 1, periodNumber: 1 }` (Unique period per section)
-  * `{ schoolId: 1, academicSessionId: 1, teacherId: 1, dayOfWeek: 1, periodNumber: 1 }` (Unique — prevents teacher double-booking)
-
 ---
 
-### 3.6. Examination & Evaluation Collections
+### 3.7. Examination & Evaluation Collections (Future Phases)
 
-#### 21. `Exam`
+#### 29. `Exam`
 Top-level examination definition.
 * **Fields**:
   * `_id`: ObjectId
@@ -513,7 +712,7 @@ Top-level examination definition.
 * **Indexes**:
   * `{ schoolId: 1, academicSessionId: 1, name: 1 }`
 
-#### 22. `ExamSubject`
+#### 30. `ExamSubject`
 Configured maximum and passing marks for a subject in an exam.
 * **Fields**:
   * `_id`: ObjectId
@@ -527,7 +726,7 @@ Configured maximum and passing marks for a subject in an exam.
 * **Indexes**:
   * `{ examId: 1, classId: 1, subjectId: 1 }` (Unique)
 
-#### 23. `Mark`
+#### 31. `Mark`
 Individual student score in an ExamSubject.
 * **Fields**:
   * `_id`: ObjectId
@@ -542,7 +741,7 @@ Individual student score in an ExamSubject.
 * **Indexes**:
   * `{ examSubjectId: 1, enrollmentId: 1 }` (Unique)
 
-#### 24. `GradeRule`
+#### 32. `GradeRule`
 Configurable grading scale per session/school.
 * **Fields**:
   * `_id`: ObjectId
@@ -556,7 +755,7 @@ Configurable grading scale per session/school.
 * **Indexes**:
   * `{ schoolId: 1, academicSessionId: 1, gradeLetter: 1 }` (Unique)
 
-#### 25. `ReportCard`
+#### 33. `ReportCard`
 Compiled end-of-term student result sheet.
 * **Fields**:
   * `_id`: ObjectId
@@ -577,12 +776,13 @@ Compiled end-of-term student result sheet.
   * `pdfReportUrl`: String
 * **Indexes**:
   * `{ examId: 1, enrollmentId: 1 }` (Unique)
+  * `{ schoolId: 1, academicSessionId: 1, classRank: 1 }`
 
 ---
 
-### 3.7. Financial Management Collections (Fees & Accounting)
+### 3.8. Financial Management Collections (Fees & Accounting)
 
-#### 26. `FeeStructure`
+#### 34. `FeeStructure`
 Master template of fee charges per class and session.
 * **Fields**:
   * `_id`: ObjectId
@@ -596,7 +796,7 @@ Master template of fee charges per class and session.
 * **Indexes**:
   * `{ schoolId: 1, academicSessionId: 1, classId: 1, feeHeadName: 1 }` (Unique)
 
-#### 27. `StudentFee`
+#### 35. `StudentFee`
 Applicable fee billing item assigned to a specific student enrollment.
 * **Fields**:
   * `_id`: ObjectId
@@ -615,7 +815,7 @@ Applicable fee billing item assigned to a specific student enrollment.
   * `{ enrollmentId: 1, feeStructureId: 1 }` (Unique)
   * `{ schoolId: 1, status: 1, dueDate: 1 }`
 
-#### 28. `Payment`
+#### 36. `Payment`
 Immutable transaction ledger for fee payments.
 * **Fields**:
   * `_id`: ObjectId
@@ -635,7 +835,7 @@ Immutable transaction ledger for fee payments.
   * `{ schoolId: 1, paymentTransactionId: 1 }` (Unique)
   * `{ studentId: 1, paymentDate: 1 }`
 
-#### 29. `Receipt`
+#### 37. `Receipt`
 Generated receipt metadata linking a payment to a printable PDF document.
 * **Fields**:
   * `_id`: ObjectId
@@ -650,9 +850,9 @@ Generated receipt metadata linking a payment to a printable PDF document.
 
 ---
 
-### 3.8. Communication, CMS & Admissions Collections
+### 3.9. Communication, CMS & Admissions Collections
 
-#### 30. `Notice`
+#### 38. `Notice`
 Public and portal circulars.
 * **Fields**:
   * `_id`: ObjectId
@@ -668,7 +868,7 @@ Public and portal circulars.
 * **Indexes**:
   * `{ schoolId: 1, publishDate: -1, isPublicWebsiteNotice: 1 }`
 
-#### 31. `Event`
+#### 39. `Event`
 School event calendar items.
 * **Fields**:
   * `_id`: ObjectId
@@ -683,18 +883,7 @@ School event calendar items.
 * **Indexes**:
   * `{ schoolId: 1, eventStartDate: 1 }`
 
-#### 32. `Holiday`
-School academic holiday calendar.
-* **Fields**:
-  * `_id`: ObjectId
-  * `schoolId`: String
-  * `name`: String (`"Independence Day"`, `"Diwali Break"`)
-  * `date`: Date
-  * `isAcademicHoliday`: Boolean (Default `true`)
-* **Indexes**:
-  * `{ schoolId: 1, date: 1 }` (Unique)
-
-#### 33. `AdmissionEnquiry`
+#### 40. `AdmissionEnquiry`
 Prospective student enquiry leads.
 * **Fields**:
   * `_id`: ObjectId
@@ -713,7 +902,7 @@ Prospective student enquiry leads.
 * **Indexes**:
   * `{ schoolId: 1, status: 1, enquiryDate: -1 }`
 
-#### 34. `GalleryAlbum`
+#### 41. `GalleryAlbum`
 CMS photo gallery album container.
 * **Fields**:
   * `_id`: ObjectId
@@ -725,7 +914,7 @@ CMS photo gallery album container.
 * **Indexes**:
   * `{ schoolId: 1, isPublished: 1 }`
 
-#### 35. `GalleryImage`
+#### 42. `GalleryImage`
 Individual photos within a GalleryAlbum.
 * **Fields**:
   * `_id`: ObjectId
@@ -736,7 +925,7 @@ Individual photos within a GalleryAlbum.
 * **Indexes**:
   * `{ albumId: 1, order: 1 }`
 
-#### 36. `Document`
+#### 43. `Document`
 Secure repository for private student/teacher documents.
 * **Fields**:
   * `_id`: ObjectId
@@ -752,7 +941,7 @@ Secure repository for private student/teacher documents.
 * **Indexes**:
   * `{ ownerType: 1, ownerId: 1, documentType: 1 }`
 
-#### 37. `AuditLog`
+#### 44. `AuditLog`
 Immutable security and administrative audit ledger.
 * **Fields**:
   * `_id`: ObjectId

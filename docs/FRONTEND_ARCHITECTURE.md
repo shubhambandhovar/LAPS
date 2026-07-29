@@ -146,6 +146,7 @@ graph LR
 * **Responsive Collapsible Sidebar**:
   * Displays school brand and user role badge at the top.
   * Organizes navigation into collapsible domain groups: *Academic*, *Attendance*, *Examinations*, *Finance*, *Communication*, *Administration*, and *Account Settings* (including Multi-Device Sessions).
+    * **Academic Domain (Phase 5)**: Includes *Academic Terms* (`/erp/academic/terms`), *Curriculum Mapping* (`/erp/academic/curriculum`), *Room Directory* (`/erp/academic/rooms`), *Bell Schedules* (`/erp/academic/bell-schedules`), *Period Management* (`/erp/academic/periods`), *Timetable Builder* (`/erp/academic/timetables` — interactive matrix with draft/published versioning, conflict detection, and future drag-and-drop readiness), *Teacher Workload Dashboard* (`/erp/academic/workload`), and *Academic Calendar & Holidays* (`/erp/academic/calendar`).
   * On mobile/tablet, the sidebar converts to a smooth drawer off-canvas menu.
 * **Top Executive Bar**:
   * **Academic Session Switcher**: Dropdown allowing Admin/Teachers to toggle between configurable academic sessions (`2025-26`, `2026-27`) without relogging.

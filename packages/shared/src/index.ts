@@ -70,3 +70,5 @@ export {
   WithdrawEnrollmentSchema,
   type WithdrawEnrollmentInput,
 } from './schemas/students.schema';
+export * from './types/curriculum';
+export * from './schemas/curriculum.schema';

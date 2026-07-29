@@ -11,6 +11,15 @@ import studentRoutes from './students.routes';
 import guardianRoutes from './guardians.routes';
 import studentGuardianRoutes from './studentGuardians.routes';
 import enrollmentRoutes from './enrollments.routes';
+import academicTermRoutes from './academicTerms.routes';
+import classSubjectRoutes from './classSubjects.routes';
+import roomRoutes from './rooms.routes';
+import bellScheduleRoutes from './bellSchedules.routes';
+import periodRoutes from './periods.routes';
+import timetableRoutes from './timetables.routes';
+import academicCalendarRoutes from './academicCalendar.routes';
+import workingDayRuleRoutes from './workingDayRules.routes';
+import holidayRoutes from './holidays.routes';
 
 const router = Router();
 
@@ -34,4 +43,16 @@ router.use('/guardians', guardianRoutes);
 router.use('/student-guardians', studentGuardianRoutes);
 router.use('/enrollments', enrollmentRoutes);
 
+// Phase 5: Mount Curriculum, Timetable & Academic Calendar endpoints
+router.use('/academic-terms', academicTermRoutes);
+router.use('/class-subjects', classSubjectRoutes);
+router.use('/rooms', roomRoutes);
+router.use('/bell-schedules', bellScheduleRoutes);
+router.use('/periods', periodRoutes);
+router.use('/timetables', timetableRoutes);
+router.use('/academic-calendar', academicCalendarRoutes);
+router.use('/working-day-rules', workingDayRuleRoutes);
+router.use('/holidays', holidayRoutes);
+
 export default router;
+

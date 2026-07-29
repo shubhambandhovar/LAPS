@@ -73,6 +73,13 @@ When a Student requests attendance or marks:
 1. Ensure `targetStudentId === req.user.profileRef`.
 2. Any attempt to access `/api/v1/students/:otherId/...` fails immediately at the routing guard.
 
+### 3.4. Teacher Timetable & Academic Calendar Scoping (`MY_TIMETABLE_ONLY` — Phase 5)
+When a Teacher accesses curriculum, timetable, bell schedules, periods, or academic calendar endpoints:
+1. **Read-Only Institutional Access**: Teachers have read-only access (`GET`) to active `ClassSubject`, `BellSchedule`, `TimetablePeriod`, `AcademicCalendar`, and `Holiday` records for the current session. Teachers have **no create, update, archive, or delete permissions** for master curriculum or calendar entities (`403 Forbidden`).
+2. **Personal Timetable Isolation (`GET /api/v1/timetables/my-timetable`)**: When a Teacher requests their timetable, the controller automatically injects `teacherId: req.user.profileRef` into the query filter, returning only timetable slots where the teacher is assigned.
+3. **Admin Timetable Matrix Protection**: Any attempt by a Teacher to query `/api/v1/timetables?teacherId=<otherTeacherId>` or access another teacher's schedule matrix returns `403 Forbidden: Cannot view timetable of another teacher`. Teachers may only query `GET /api/v1/timetables?sectionId=<sectionId>` for sections where they have an active `TeachingAssignment`.
+4. **Published Timetable Isolation & Workload Metrics**: Teachers can only access timetable slots where `status === "PUBLISHED"`. Drafted or archived slots (`status === "DRAFT" | "ARCHIVED"`) are automatically excluded from teacher queries. Teachers can query their own workload metrics (`GET /api/v1/timetables/workload/:teacherId` where `teacherId === req.user.profileRef`).
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

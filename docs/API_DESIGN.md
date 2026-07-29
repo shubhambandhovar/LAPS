@@ -184,19 +184,68 @@ Standard collection endpoints accept uniform URL query parameters:
   * `POST /api/v1/enrollments/:id/transfer`: Transfer Wizard endpoint — marks enrollment `enrollmentStatus: "TRANSFERRED"` with remarks and transfer date.
   * `POST /api/v1/enrollments/:id/withdraw`: Withdrawal Wizard endpoint — marks enrollment `enrollmentStatus: "WITHDRAWN"` with remarks.
 
-### 5.6. Attendance Management (`/api/v1/attendance`)
+### 5.6. Curriculum, Timetable & Academic Calendar (`/api/v1/academic-terms`, `/api/v1/class-subjects`, `/api/v1/rooms`, `/api/v1/bell-schedules`, `/api/v1/periods`, `/api/v1/timetables`, `/api/v1/academic-calendar`, `/api/v1/holidays`, `/api/v1/working-day-rules`)
+* **Academic Term Management**:
+  * `GET  /api/v1/academic-terms`: List academic terms beneath an academic session (`Term 1`, `Term 2`).
+  * `POST /api/v1/academic-terms`: Create an academic term (`name`, `code`, `startDate`, `endDate`, `orderSequence`).
+  * `PATCH /api/v1/academic-terms/:id`: Update term dates or sequence.
+  * `PATCH /api/v1/academic-terms/:id/archive`: Soft-archive academic term (`status: "ARCHIVED"`).
+* **ClassSubject Mapping & Constraints**:
+  * `GET  /api/v1/class-subjects`: List class-subject mappings (filterable by `academicSessionId`, `classId`, `isMandatory`, `isOptional`).
+  * `POST /api/v1/class-subjects`: Create mapping between a global `Subject` and a `Class` for an `AcademicSession` with optional `minPeriodsPerWeek` and `maxPeriodsPerWeek` constraints. Validates Teacher Assignment Compatibility.
+  * `PATCH /api/v1/class-subjects/:id`: Update mandatory/optional flag, period constraints, elective group, or order sequence.
+  * `PATCH /api/v1/class-subjects/:id/archive`: Soft-archive class-subject mapping (`status: "ARCHIVED"`).
+* **Room & Laboratory Catalog**:
+  * `GET  /api/v1/rooms`: List institutional rooms and laboratories (filterable by `roomType`, `building`).
+  * `POST /api/v1/rooms`: Create a dedicated room entry (`name`, `code`, `capacity`, `roomType`).
+  * `PATCH /api/v1/rooms/:id`: Update room details or capacity.
+  * `PATCH /api/v1/rooms/:id/archive`: Soft-archive room (`status: "ARCHIVED"`).
+* **Bell Schedule Management**:
+  * `GET  /api/v1/bell-schedules`: List bell schedules for an academic session (filterable by `scopeType: "GLOBAL" | "CLASS"`, target class, or date range).
+  * `POST /api/v1/bell-schedules`: Create a bell schedule (`REGULAR`, `EXAM`, `HALF_DAY`, `SPECIAL_EVENT`) assigned globally, by class (`targetClassIds`), and/or by date range (`validFrom`, `validTo`).
+  * `PATCH /api/v1/bell-schedules/:id`: Update schedule name, type, scope, date range, or toggle default status (`isDefault: true`).
+  * `PATCH /api/v1/bell-schedules/:id/archive`: Soft-archive bell schedule (`status: "ARCHIVED"`).
+* **Period Management**:
+  * `GET  /api/v1/periods`: List periods for a bell schedule ordered sequentially.
+  * `POST /api/v1/periods`: Create a period with sequence, start time, end time, and break flag. Enforces time-overlap prevention.
+  * `PATCH /api/v1/periods/:id`: Update period sequence, times, or break status.
+  * `PATCH /api/v1/periods/:id/archive`: Soft-archive period (`status: "ARCHIVED"`).
+* **Timetable Scheduling (Versioned Weekly Matrix & Teacher Workload)**:
+  * `GET  /api/v1/timetables/my-timetable`: Teacher-scoped endpoint returning active `PUBLISHED` weekly schedule matrix for the authenticated Teacher profile (`MY_TIMETABLE_ONLY`).
+  * `GET  /api/v1/timetables`: Admin query for weekly timetable matrix by `academicSessionId`, `classId`, `sectionId`, or `teacherId` (filterable by `status: "DRAFT" | "PUBLISHED"`).
+  * `GET  /api/v1/timetables/workload/:teacherId`: Compute teacher workload metrics (daily periods, weekly periods, free periods, and overload status against configurable thresholds).
+  * `POST /api/v1/timetables`: Create timetable slot assignment referencing dedicated `roomId`. Automatically detects and blocks Teacher Conflicts, Room Conflicts, and Section Conflicts (`409 Conflict`).
+  * `PATCH /api/v1/timetables/:id`: Reassign slot room (`roomId`), teacher, or subject with full conflict validation.
+  * `POST /api/v1/timetables/publish`: Batch publish drafted timetable slots (`status: "PUBLISHED"`), making them accessible to teachers and operational for attendance.
+  * `PATCH /api/v1/timetables/:id/archive`: Soft-archive timetable slot (`status: "ARCHIVED"`).
+* **Academic Calendar**:
+  * `GET  /api/v1/academic-calendar`: List institutional calendar events by date range or `eventType`.
+  * `POST /api/v1/academic-calendar`: Create calendar event (`WORKING_DAY`, `HOLIDAY`, `HALF_DAY`, `EXAM_BLOCK`, `VACATION`, `SPECIAL_EVENT`, `EMERGENCY_CLOSURE`) with optional recurring rules (`isRecurring: true`, `recurrenceRule`: frequency weekly/monthly/yearly).
+  * `PATCH /api/v1/academic-calendar/:id`: Update event dates, description, recurrence rules, or target class scope.
+  * `PATCH /api/v1/academic-calendar/:id/archive`: Soft-archive calendar event (`status: "ARCHIVED"`).
+* **Holiday Management**:
+  * `GET  /api/v1/holidays`: List official institutional holidays (filterable by `holidayType`, date range, `isOptionalHoliday`).
+  * `POST /api/v1/holidays`: Create holiday catalog entry (`NATIONAL`, `STATE`, `SCHOOL`, `OPTIONAL`, `EMERGENCY_CLOSURE`).
+  * `PATCH /api/v1/holidays/:id`: Update holiday title, dates, or attendance impact flag.
+  * `PATCH /api/v1/holidays/:id/archive`: Soft-archive holiday (`status: "ARCHIVED"`).
+* **Working Day Rules**:
+  * `GET  /api/v1/working-day-rules`: Retrieve active working day rule configuration for an academic session.
+  * `PUT  /api/v1/working-day-rules`: Create or update working day rules (`MON_TO_FRI`, `MON_TO_SAT`, `CUSTOM`, half-days, emergency closures).
+
+### 5.7. Attendance Management (`/api/v1/attendance` — Future Phase 7)
+* **Future Attendance Integration Contract**: Daily and period-wise attendance marking endpoints do not maintain their own schedule or calendar. They must dynamically consume `PUBLISHED` Timetable slots, active `TeachingAssignment` scopes, and active `Enrollment` records, cross-referenced with `Holiday` and `WorkingDayRule` calendar status.
 * `GET  /api/v1/attendance/sheet`: Retrieve daily class roster with attendance status for a date.
 * `POST /api/v1/attendance/batch`: Submit daily attendance batch for a section (scoped to Class Teacher or Admin).
 * `GET  /api/v1/attendance/student/:studentId`: Retrieve monthly attendance percentage and calendar for a student.
 
-### 5.7. Homework & Study Material (`/api/v1/homework`, `/api/v1/materials`)
+### 5.8. Homework & Study Material (`/api/v1/homework`, `/api/v1/materials`)
 * `GET  /api/v1/homework`: List homework assignments (scoped to teacher assignments, student class, or parent children).
 * `POST /api/v1/homework`: Create homework assignment with optional attachment URLs.
 * `POST /api/v1/homework/:homeworkId/submit`: Student submits homework attachment/remarks.
 * `PATCH /api/v1/homework/submissions/:submissionId/evaluate`: Teacher grades/reviews homework submission.
 * `POST /api/v1/materials`: Teacher uploads study material PDF/resource for assigned class.
 
-### 5.8. Examinations, Marks & Report Cards (`/api/v1/exams`)
+### 5.9. Examinations, Marks & Report Cards (`/api/v1/exams`)
 * `GET  /api/v1/exams`: List examination schedules for the current session.
 * `POST /api/v1/exams`: Create an examination (`Mid-Term 2026`, `Annual Examination`).
 * `POST /api/v1/exams/:examId/subjects`: Configure maximum marks and passing marks for an exam subject.
@@ -205,7 +254,7 @@ Standard collection endpoints accept uniform URL query parameters:
 * `POST /api/v1/exams/:examId/compile-results`: System calculates overall grades and ranks for a class.
 * `GET  /api/v1/exams/:examId/report-cards/:studentId`: Retrieve compiled Report Card JSON and PDF download link.
 
-### 5.9. Fee Management & Accounting (`/api/v1/fees`)
+### 5.10. Fee Management & Accounting (`/api/v1/fees`)
 * `GET  /api/v1/fees/structures`: List configured fee structures per class/session.
 * `POST /api/v1/fees/structures`: Create fee structure item.
 * `GET  /api/v1/fees/student/:studentId`: Retrieve student fee dues, discounts, and payment history.
@@ -213,17 +262,17 @@ Standard collection endpoints accept uniform URL query parameters:
 * `GET  /api/v1/fees/receipts/:receiptNumber`: Download/view official fee receipt PDF.
 * `GET  /api/v1/fees/defaulters`: Admin report of students with overdue pending fee balances.
 
-### 5.10. Communication & Public CMS (`/api/v1/communication`, `/api/v1/cms`)
+### 5.11. Communication & Public CMS (`/api/v1/communication`, `/api/v1/cms`)
 * `GET  /api/v1/communication/notices`: List circulars and notices scoped to user audience.
 * `POST /api/v1/communication/notices`: Admin create and publish circular.
 * `GET  /api/v1/cms/gallery/albums`: Public/Admin view photo gallery albums.
 * `POST /api/v1/cms/gallery/albums`: Admin create gallery album and upload images.
 * `PATCH /api/v1/cms/homepage`: Update homepage hero banners, announcement ticker, and principal message.
 
-### 5.11. Admission Enquiries (`/api/v1/admissions`)
+### 5.12. Admission Enquiries (`/api/v1/admissions`)
 * `POST /api/v1/admissions/enquiries`: Public website endpoint to submit online admission inquiry.
 * `GET  /api/v1/admissions/enquiries`: Admin/Receptionist paginated Kanban view of enquiries.
 * `PATCH /api/v1/admissions/enquiries/:id/status`: Update inquiry pipeline status and append follow-up notes.
 
-### 5.12. Audit System & Security Logs (`/api/v1/audit-logs`)
+### 5.13. Audit System & Security Logs (`/api/v1/audit-logs`)
 * `GET  /api/v1/audit-logs`: Super Admin search across immutable audit logs (filterable by actor, action code, date range, entity).

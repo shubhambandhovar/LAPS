@@ -131,6 +131,34 @@ export const ERPLayout: React.FC = () => {
             <School className="w-4 h-4 text-indigo-400" />
             <span>Enrollment Matrix</span>
           </Link>
+
+          <div className="pt-3 pb-1 px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Curriculum & Timetable
+          </div>
+
+          <Link
+            to="/portal/curriculum"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+            <span>Curriculum & Rooms</span>
+          </Link>
+
+          <Link
+            to="/portal/timetable"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <School className="w-4 h-4 text-indigo-400" />
+            <span>Timetable & Workload</span>
+          </Link>
+
+          <Link
+            to="/portal/academic-calendar"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <Calendar className="w-4 h-4 text-indigo-400" />
+            <span>Academic Calendar</span>
+          </Link>
         </nav>
 
         {user && (

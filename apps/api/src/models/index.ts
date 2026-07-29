@@ -12,3 +12,13 @@ export * from './Student';
 export * from './Guardian';
 export * from './StudentGuardian';
 export * from './Enrollment';
+export * from './AcademicTerm';
+export * from './Room';
+export * from './ClassSubject';
+export * from './BellSchedule';
+export * from './TimetablePeriod';
+export * from './Timetable';
+export * from './AcademicCalendarEvent';
+export * from './WorkingDayRule';
+export * from './Holiday';
+

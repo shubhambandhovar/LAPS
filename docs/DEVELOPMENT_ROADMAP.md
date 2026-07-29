@@ -60,16 +60,25 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 5 — Administrative Staff & Department Scoping
-* **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
+### Phase 5 — Curriculum, Timetable & Academic Calendar (IN PLANNING)
+* **Objective**: Build academic terms (`AcademicTerm`), curriculum mapping (`ClassSubject` with period constraints), dedicated room catalog (`Room`), bell schedules (global/class/date-range scoped), periods, conflict-checked versioned weekly timetable scheduling (`Timetable` with draft/published versioning and teacher workload metrics), recurring academic calendar events, working day rules, and holiday management.
 * **Dependencies**: Phase 4.
+* **Deliverables**: `AcademicTerm`, `ClassSubject`, `Room`, `BellSchedule`, `TimetablePeriod`, `Timetable`, `AcademicCalendarEvent`, `WorkingDayRule`, and `Holiday` models and APIs; Curriculum mapping UI, Room directory, interactive Timetable Builder with versioning and conflict detection, Teacher Workload dashboard, and Academic Calendar/Holiday management UI.
+* **Acceptance Criteria**: System maps elective/mandatory subjects per class with min/max period constraints, validates teacher assignment compatibility, detects and rejects teacher/room/section timetable conflicts (`409 Conflict`), isolates teachers to `PUBLISHED` schedules and `MY_TIMETABLE_ONLY`, calculates workload metrics, and establishes the attendance integration contract for future modules.
+* **Tests Required**: Comprehensive suite covering duplicate periods, teacher conflict, room conflict, section conflict, assignment compatibility, calendar validation, RBAC scoping, academic terms, room catalog, bell schedule scoping, timetable versioning, workload computation, and recurring events (`TEST-CURRICULUM-001` to `013`).
+
+---
+
+### Phase 6 — Administrative Staff & Department Scoping
+* **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
+* **Dependencies**: Phase 5.
 * **Deliverables**: `Staff` model and APIs; administrative department directory.
 * **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
 * **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
 
 ---
 
-### Phase 6 — Daily Student Attendance Module
+### Phase 7 — Daily Student Attendance Module
 * **Objective**: Implement daily batch attendance marking, class rosters, and attendance summary calculators.
 * **Dependencies**: Phase 5.
 * **Deliverables**: `Attendance` model and API batch endpoints; Teacher UI `<AttendanceSheet />`; Parent/Student attendance calendar widgets.
@@ -78,21 +87,12 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 7 — Homework & Study Material Distribution
+### Phase 8 — Homework & Study Material Distribution
 * **Objective**: Build Homework assignment creation, file attachment handling, student submission upload, and teacher grading.
 * **Dependencies**: Phase 5.
 * **Deliverables**: `Homework`, `HomeworkSubmission`, `StudyMaterial` models and APIs; UI creation wizard; Parent homework feed.
 * **Acceptance Criteria**: Teacher creates homework with due date; students submit attachments; teacher marks submission as checked.
 * **Tests Required**: Homework lifecycle workflow test (`TEST-FLOW-HW`); file upload MIME validation test.
-
----
-
-### Phase 8 — Weekly Timetable Scheduling
-* **Objective**: Build class-wise and teacher-wise weekly timetable scheduling without double-booking conflicts.
-* **Dependencies**: Phase 5.
-* **Deliverables**: `Timetable` model and APIs; Interactive timetable grid component in ERP portal.
-* **Acceptance Criteria**: System rejects assigning a teacher to two different sections during the same day and period (`409 Conflict`).
-* **Tests Required**: Timetable conflict detection integration test.
 
 ---
 

@@ -23,6 +23,11 @@ import {
   GuardiansPage,
   EnrollmentsPage,
 } from '../modules/students';
+import {
+  CurriculumPage,
+  TimetablePage,
+  AcademicCalendarPage,
+} from '../modules/curriculum';
 
 const router = createBrowserRouter([
   {
@@ -95,8 +100,21 @@ const router = createBrowserRouter([
         path: 'enrollments',
         element: <EnrollmentsPage />,
       },
+      {
+        path: 'curriculum',
+        element: <CurriculumPage />,
+      },
+      {
+        path: 'timetable',
+        element: <TimetablePage />,
+      },
+      {
+        path: 'academic-calendar',
+        element: <AcademicCalendarPage />,
+      },
     ],
   },
+
   {
     path: '*',
     element: <PublicLayout />,

@@ -116,3 +116,45 @@ A mandatory requirement is testing **Negative Access Cases (Denial of Service & 
    * Authenticate as Teacher -> Read student enrolled in assigned class/section -> Asserts HTTP `200 OK`.
    * Authenticate as Teacher -> Attempt reading student outside assigned sections -> Asserts HTTP `403 Forbidden`.
    * Authenticate as Teacher -> Attempt creating, promoting, transferring, or archiving student -> Asserts HTTP `403 Forbidden`.
+
+### 3.7. Phase 5 — Curriculum, Timetable & Academic Calendar Verification Suite
+
+The Curriculum, Timetable, and Academic Calendar test suite guarantees database integrity, zero double-booking conflicts, and strict multi-role authorization:
+
+1. **Duplicate Period & Overlap Validation (`TEST-CURRICULUM-001`)**:
+   * Attempt creating a `TimetablePeriod` with a duplicate `sequence` within the same `bellScheduleId` -> Asserts HTTP `409 Conflict`.
+   * Attempt creating a period with `startTime` and `endTime` overlapping an existing active period in the same bell schedule -> Asserts HTTP `400 Bad Request` / `409 Conflict`.
+2. **Teacher Conflict Detection (`TEST-CURRICULUM-002`)**:
+   * Create Timetable Slot A for Section A at Period 1 on Monday with Teacher T1 -> Asserts HTTP `201 Created`.
+   * Attempt creating Timetable Slot B for Section B at Period 1 on Monday with the same Teacher T1 -> Asserts HTTP `409 Conflict: Teacher is already assigned to another class during this period`.
+3. **Room Conflict Detection (`TEST-CURRICULUM-003`)**:
+   * Create Timetable Slot A for Section A at Period 2 on Tuesday assigned to dedicated `roomId: R01` -> Asserts HTTP `201 Created`.
+   * Attempt creating Timetable Slot B for Section B at Period 2 on Tuesday assigned to the same `roomId: R01` -> Asserts HTTP `409 Conflict: Room is already booked by another class during this period`.
+4. **Section Conflict Detection (`TEST-CURRICULUM-004`)**:
+   * Create Timetable Slot A for Section A at Period 3 on Wednesday for Mathematics -> Asserts HTTP `201 Created`.
+   * Attempt creating Timetable Slot B for Section A at Period 3 on Wednesday for Science -> Asserts HTTP `409 Conflict: Section already has a subject scheduled during this period`.
+5. **Teacher Assignment Compatibility Validation (`TEST-CURRICULUM-005`)**:
+   * Attempt scheduling a timetable slot with a `teachingAssignmentId` where `subjectId`, `classId`, or `sectionId` does not match the timetable slot's section and subject -> Asserts HTTP `400 Bad Request` / `409 Conflict`.
+6. **Academic Calendar & Holiday Validation (`TEST-CURRICULUM-006`)**:
+   * Create an `AcademicCalendarEvent` of type `"HOLIDAY"` and a corresponding `Holiday` catalog entry -> Asserts both entries are queryable by date range.
+   * Toggle `emergencyClosureActive: true` on `WorkingDayRule` -> Asserts system reflects emergency closure status for the academic session.
+7. **RBAC Timetable & Calendar Scoping (`TEST-CURRICULUM-007`)**:
+   * Authenticate as Teacher -> Query `GET /api/v1/timetables/my-timetable` -> Asserts HTTP `200 OK` returning only the teacher's assigned `PUBLISHED` slots.
+   * Authenticate as Teacher -> Attempt querying another teacher's timetable matrix (`GET /api/v1/timetables?teacherId=<otherTeacherId>`) -> Asserts HTTP `403 Forbidden`.
+   * Authenticate as Teacher -> Attempt creating, updating, or archiving a timetable slot, period, bell schedule, or holiday -> Asserts HTTP `403 Forbidden`.
+8. **Academic Term & Order Sequence Validation (`TEST-CURRICULUM-008`)**:
+   * Create `AcademicTerm` entries (`Term 1`, `Term 2`) under an Academic Session -> Asserts code uniqueness and sequential order index enforcement.
+9. **Dedicated Room Catalog Validation (`TEST-CURRICULUM-009`)**:
+   * Attempt creating two rooms with the same room `code` -> Asserts HTTP `409 Conflict`.
+   * Query rooms by `roomType` and `status: "ACTIVE"` -> Asserts correct filtering.
+10. **Bell Schedule Scope Validation (`TEST-CURRICULUM-010`)**:
+   * Create a bell schedule with `scopeType: "CLASS"` and `targetClassIds` -> Asserts schedule is returned when querying for that class and excluded for other classes.
+   * Create a bell schedule with `validFrom` / `validTo` -> Asserts queries filter out schedules outside the valid date range.
+11. **Timetable Versioning & Published Isolation (`TEST-CURRICULUM-011`)**:
+   * Create timetable slots with `status: "DRAFT"` -> Asserts slots are visible to Admin queries but excluded when Teacher queries `GET /api/v1/timetables/my-timetable`.
+   * Execute `POST /api/v1/timetables/publish` -> Asserts slot status becomes `"PUBLISHED"` and is now visible to Teacher queries.
+12. **Curriculum Constraints & Workload Computation (`TEST-CURRICULUM-012`)**:
+   * Configure `ClassSubject` with `minPeriodsPerWeek: 5` and `maxPeriodsPerWeek: 6`.
+   * Query `GET /api/v1/timetables/workload/:teacherId` -> Asserts correct computation of daily periods, total weekly periods, free periods, and overload status.
+13. **Recurring Calendar Event Validation (`TEST-CURRICULUM-013`)**:
+   * Create an `AcademicCalendarEvent` with `isRecurring: true` and `recurrenceRule: { frequency: "WEEKLY", count: 10 }` -> Asserts recurrence rule persistence and date range query matching.

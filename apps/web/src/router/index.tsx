@@ -28,6 +28,21 @@ import {
   TimetablePage,
   AcademicCalendarPage,
 } from '../modules/curriculum';
+import {
+  AttendanceMarkPage,
+  AttendanceRegisterPage,
+  BulkAttendancePage,
+  LeaveManagementPage,
+  AttendanceCorrectionsPage,
+  AttendanceDashboardPage,
+} from '../modules/attendance';
+import {
+  HomeworkDashboardPage,
+  HomeworkListPage,
+  HomeworkSubmissionsPage,
+  StudyMaterialPage,
+  RubricLibraryPage,
+} from '../modules/homework';
 
 const router = createBrowserRouter([
   {
@@ -111,6 +126,52 @@ const router = createBrowserRouter([
       {
         path: 'academic-calendar',
         element: <AcademicCalendarPage />,
+      },
+      // Phase 6: Attendance & Leave Management
+      {
+        path: 'attendance/dashboard',
+        element: <AttendanceDashboardPage />,
+      },
+      {
+        path: 'attendance/mark',
+        element: <AttendanceMarkPage />,
+      },
+      {
+        path: 'attendance/register',
+        element: <AttendanceRegisterPage />,
+      },
+      {
+        path: 'attendance/bulk',
+        element: <BulkAttendancePage />,
+      },
+      {
+        path: 'attendance/corrections',
+        element: <AttendanceCorrectionsPage />,
+      },
+      {
+        path: 'attendance/leaves',
+        element: <LeaveManagementPage />,
+      },
+      // Phase 7: Homework, Assignments & Study Material
+      {
+        path: 'homework/dashboard',
+        element: <HomeworkDashboardPage />,
+      },
+      {
+        path: 'homework/list',
+        element: <HomeworkListPage />,
+      },
+      {
+        path: 'homework/submissions',
+        element: <HomeworkSubmissionsPage />,
+      },
+      {
+        path: 'homework/study-material',
+        element: <StudyMaterialPage />,
+      },
+      {
+        path: 'homework/rubrics',
+        element: <RubricLibraryPage />,
       },
     ],
   },

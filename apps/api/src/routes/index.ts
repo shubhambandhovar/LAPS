@@ -22,6 +22,9 @@ import workingDayRuleRoutes from './workingDayRules.routes';
 import holidayRoutes from './holidays.routes';
 import attendanceRoutes from './attendance.routes';
 import leaveRoutes from './leaves.routes';
+import homeworkRoutes from './homework.routes';
+import rubricRoutes from './rubric.routes';
+import studyMaterialRoutes from './studyMaterial.routes';
 
 const router = Router();
 
@@ -60,6 +63,11 @@ router.use('/holidays', holidayRoutes);
 // Phase 6: Mount Attendance & Leave Management endpoints
 router.use('/attendance', attendanceRoutes);
 router.use('/leaves', leaveRoutes);
+
+// Phase 7: Mount Homework, Rubrics & Study Material endpoints
+router.use('/homework', homeworkRoutes);
+router.use('/rubrics', rubricRoutes);
+router.use('/study-material', studyMaterialRoutes);
 
 export default router;
 

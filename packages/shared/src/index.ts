@@ -74,4 +74,4 @@ export * from './types/curriculum';
 export * from './schemas/curriculum.schema';
 export * from './types/attendance';
 export * from './schemas/attendance.schema';
-
+export * from './schemas/homework.schema';

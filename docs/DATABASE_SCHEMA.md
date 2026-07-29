@@ -770,65 +770,168 @@ Configurable rule governing automatic attendance locking after a specific cutoff
 * **Indexes**:
   * `{ academicSessionId: 1 }` (Unique)
 
-### 3.7. Academic Operations & Classroom Collections (Future Phases)
+### 3.7. Homework, Assignments & Study Material Collections (Phase 7)
 
 #### 30. `Homework`
-Homework assigned by an authorized teacher.
+Homework, assignments, projects, activities, and reading tasks created by authorized teachers. Homework strictly depends on `AcademicSession` -> `Published Timetable` -> `TeachingAssignment` -> `ClassSubject` -> `Enrollment` and never maintains an independent schedule or class-subject mapping.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession`
-  * `teachingAssignmentId`: ObjectId -> `TeachingAssignment` (Indexed)
-  * `classId`: ObjectId -> `Class`
-  * `sectionId`: ObjectId -> `Section`
-  * `subjectId`: ObjectId -> `Subject`
-  * `teacherId`: ObjectId -> `Teacher`
-  * `title`: String
-  * `description`: String
-  * `attachmentUrls`: Array<String>
-  * `assignedDate`: Date
-  * `dueDate`: Date
-  * `status`: Enum (`"DRAFT" | "PUBLISHED" | "ARCHIVED"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, Required)
+  * `teachingAssignmentId`: ObjectId -> `TeachingAssignment` (Indexed, Required)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Indexed, Required)
+  * `classId`: ObjectId -> `Class` (Indexed, Required)
+  * `sectionId`: ObjectId -> `Section` (Indexed, Required)
+  * `subjectId`: ObjectId -> `Subject` (Indexed, Required)
+  * `teacherId`: ObjectId -> `Teacher` (Indexed, Required)
+  * `title`: String (Required, max 200 chars)
+  * `description`: String (Optional, detailed description)
+  * `instructions`: String (Optional, submission guidelines)
+  * `homeworkType`: Enum (`"HOMEWORK" | "ASSIGNMENT" | "PROJECT" | "ACTIVITY" | "READING"`, Default `"HOMEWORK"`)
+  * `maxAttempts`: Number (Default `1`, positive integer supporting multi-attempt assignments)
+  * `attachments`: Array of `HomeworkAttachment` objects:
+    * `type`: Enum (`"PDF" | "IMAGE" | "VIDEO" | "LINK" | "ZIP" | "DOCUMENT"`)
+    * `url`: String (Required URL to storage or web resource; stores URLs only)
+    * `title`: String (Optional label)
+    * `fileName`: String (Required metadata)
+    * `fileSize`: Number (Required size in bytes)
+    * `mimeType`: String (Required MIME type)
+    * `uploadedAt`: Date (Required upload timestamp)
+  * `assignedDate`: Date (Required)
+  * `dueDate`: Date (Required, must be `>= assignedDate`)
+  * `scheduledPublishAt`: Date (Optional release date/time when `status === "SCHEDULED"`)
+  * `maxMarks`: Number (Optional, positive integer or decimal)
+  * `status`: Enum (`"DRAFT" | "SCHEDULED" | "PUBLISHED" | "CLOSED" | "ARCHIVED"`, Default `"DRAFT"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ schoolId: 1, classId: 1, sectionId: 1, status: 1, dueDate: 1 }`
-  * `{ teacherId: 1, academicSessionId: 1 }`
+  * `{ classId: 1, sectionId: 1, status: 1, dueDate: 1 }`
+  * `{ teacherId: 1, academicSessionId: 1, status: 1 }`
+  * `{ teachingAssignmentId: 1, dueDate: -1 }`
+  * `{ status: 1, scheduledPublishAt: 1 }` (Index for cron job automatic scheduled publishing)
+* **Validation & Lifecycle Rules**:
+  * A Teacher can only create or publish homework for a `teachingAssignmentId` where they are assigned to that section and subject AND where there is an active `PUBLISHED` Timetable slot (`Timetable.status === "PUBLISHED"`).
+  * State transitions support `DRAFT` -> `SCHEDULED` -> `PUBLISHED` -> `CLOSED` -> `ARCHIVED`. When `status === "SCHEDULED"`, an automated worker job publishes the assignment when `scheduledPublishAt <= now`.
+  * Soft deletion is executed via `PATCH /:id/archive` setting `status: "ARCHIVED"`.
 
 #### 31. `HomeworkSubmission`
-Student submission record for a homework assignment.
+Student submission record and teacher evaluation for a published homework assignment.
 * **Fields**:
   * `_id`: ObjectId
-  * `homeworkId`: ObjectId -> `Homework` (Indexed)
-  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
-  * `studentId`: ObjectId -> `Student`
-  * `submissionDate`: Date
-  * `contentUrl`: String (Attachment)
-  * `comment`: String
-  * `teacherEvaluationStatus`: Enum (`"PENDING" | "CHECKED" | "REDO_REQUIRED"`)
-  * `teacherRemarks`: String
+  * `homeworkId`: ObjectId -> `Homework` (Indexed, Required)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed, Required)
+  * `studentId`: ObjectId -> `Student` (Indexed, Required)
+  * `currentAttempt`: Number (Default `1`, tracks attempt number against `homework.maxAttempts`)
+  * `plagiarismStatus`: Enum (`"NOT_CHECKED" | "CHECKED"`, Default `"NOT_CHECKED"`, reserved for future plagiarism detection integration)
+  * `attachments`: Array of attachment objects with extended metadata:
+    * `type`: Enum (`"PDF" | "IMAGE" | "VIDEO" | "LINK" | "ZIP" | "DOCUMENT"`)
+    * `url`: String (Required URL; stores URLs only)
+    * `title`: String (Optional)
+    * `fileName`: String (Required)
+    * `fileSize`: Number (Required)
+    * `mimeType`: String (Required)
+    * `uploadedAt`: Date (Required)
+  * `remarks`: String (Optional student comment)
+  * `submittedAt`: Date (Required)
+  * `isLate`: Boolean (Calculated automatically: `true` if `submittedAt > homework.dueDate`)
+  * `lateMinutes`: Number (Optional integer tracking arrival delay after due date)
+  * `status`: Enum (`"DRAFT" | "SUBMITTED" | "EVALUATED" | "RETURNED" | "ARCHIVED"`, Default `"SUBMITTED"`)
+  * `evaluation`: Embedded `HomeworkEvaluation` object (Optional until evaluated):
+    * `rubricTemplateId`: ObjectId -> `RubricTemplate` (Optional reference to reusable template)
+    * `marks`: Number (Optional, must be `<= homework.maxMarks`)
+    * `grade`: String (Optional, e.g., `"A+"`, `"A"`, `"B"`, `"C"`, `"D"`, `"E"`)
+    * `remarks`: String (Teacher feedback)
+    * `rubric`: Array of `{ criterion: String, marksAwarded: Number, maxMarks: Number, comment?: String }`
+    * `evaluatedBy`: ObjectId -> `User`
+    * `evaluatedAt`: Date
+    * `returnedForResubmission`: Boolean (Default `false`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ homeworkId: 1, enrollmentId: 1 }` (Unique)
+  * `{ homeworkId: 1, enrollmentId: 1, currentAttempt: 1 }` (Unique compound index across attempts)
+  * `{ studentId: 1, status: 1, submittedAt: -1 }`
+  * `{ homeworkId: 1, status: 1, isLate: 1 }`
+* **Validation & Evaluation Workflow Rules**:
+  * Students can submit only for their own active `enrollmentId`.
+  * If `returnedForResubmission === true` and `currentAttempt < homework.maxAttempts`, the student can upload a revised attempt (`currentAttempt + 1`).
+  * Soft deletion is executed via `PATCH /:id/archive` setting `status: "ARCHIVED"`.
 
 #### 32. `StudyMaterial`
-Downloadable learning notes and study resources.
+Downloadable learning notes, presentations, and study resources uploaded by authorized teachers with complete version history preservation and release/expiration windows.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession`
-  * `classId`: ObjectId -> `Class` (Indexed)
-  * `subjectId`: ObjectId -> `Subject` (Indexed)
-  * `uploaderTeacherId`: ObjectId -> `Teacher`
-  * `title`: String
-  * `description`: String
-  * `fileUrl`: String (Protected resource URL)
-  * `fileMimeType`: String
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, Required)
+  * `teachingAssignmentId`: ObjectId -> `TeachingAssignment` (Indexed, Required)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Indexed, Required)
+  * `classId`: ObjectId -> `Class` (Indexed, Required)
+  * `sectionId`: ObjectId -> `Section` (Indexed, Required)
+  * `subjectId`: ObjectId -> `Subject` (Indexed, Required)
+  * `uploaderTeacherId`: ObjectId -> `Teacher` (Indexed, Required)
+  * `title`: String (Required, max 200 chars)
+  * `description`: String (Optional)
+  * `materialType`: Enum (`"NOTES" | "PDF" | "PRESENTATION" | "VIDEO" | "LINK" | "REFERENCE_MATERIAL"`, Required)
+  * `fileUrl`: String (Required URL; stores URLs only)
+  * `fileMimeType`: String (Optional MIME descriptor)
+  * `publishAt`: Date (Optional release date/time window start)
+  * `expireAt`: Date (Optional expiration window end)
+  * `versionHistory`: Array of immutable snapshot objects:
+    * `version`: Number (Integer version index)
+    * `fileUrl`: String
+    * `materialType`: Enum (`"NOTES" | "PDF" | "PRESENTATION" | "VIDEO" | "LINK" | "REFERENCE_MATERIAL"`)
+    * `changedAt`: Date
+    * `changedBy`: ObjectId -> `User`
+    * `changelog`: String (Description of changes in this version)
+  * `currentVersion`: Number (Default `1`)
+  * `status`: Enum (`"PUBLISHED" | "ARCHIVED"`, Default `"PUBLISHED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ schoolId: 1, classId: 1, subjectId: 1 }`
+  * `{ classId: 1, sectionId: 1, subjectId: 1, status: 1 }`
+  * `{ uploaderTeacherId: 1, academicSessionId: 1 }`
+  * `{ publishAt: 1, expireAt: 1 }`
+* **Version History & Lifecycle Rules**:
+  * Whenever a teacher updates `fileUrl` or `materialType`, the previous state is pushed to `versionHistory` and `currentVersion` is incremented.
+  * Soft deletion is executed via `PATCH /:id/archive` setting `status: "ARCHIVED"`.
+
+#### 33. `RubricTemplate`
+Reusable rubric template definitions for teachers and departments so evaluations can reference templates instead of duplicating rubric criteria.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed, Required)
+  * `title`: String (Required, e.g., `"Standard Essay Rubric"`, `"Lab Project Grading 50 pts"`)
+  * `description`: String (Optional)
+  * `subjectId`: ObjectId -> `Subject` (Optional, subject scoping)
+  * `createdByTeacherId`: ObjectId -> `Teacher` (Indexed, Required)
+  * `criteria`: Array of objects:
+    * `criterion`: String (Required title)
+    * `maxMarks`: Number (Required positive integer)
+    * `description`: String (Optional scoring guidance)
+  * `totalMaxMarks`: Number (Calculated sum of criteria `maxMarks`)
+  * `isShared`: Boolean (Default `false` — whether available to other teachers teaching the same subject)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`, Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ createdByTeacherId: 1, status: 1 }`
+  * `{ subjectId: 1, isShared: 1, status: 1 }`
+
+#### Materialized Analytics Summary Strategy (Homework & Study Material)
+Similar to Attendance Analytics, Homework Analytics uses a **Materialized Summary Strategy** (`HomeworkSummaryCache` collection or summary document structure) keyed by `(academicSessionId, teacherId, classId, subjectId, month, year)` to avoid expensive on-the-fly aggregations across thousands of submissions:
+* **Pre-aggregated counters**: Tracks `totalAssigned`, `submissionCount`, `lateSubmissionCount`, `pendingEvaluationCount`, and running `totalMarksAwarded` / `averageMarks`.
+* **Incremental Refresh**: When a student submits homework or a teacher completes an evaluation, an asynchronous event hook incrementally increments the corresponding counters in the materialized summary document.
 
 ---
 
-### 3.7. Examination & Evaluation Collections (Future Phases)
+### 3.8. Examination & Evaluation Collections (Future Phases)
 
-#### 33. `Exam`
+#### 34. `Exam`
 Top-level examination definition.
 * **Fields**:
   * `_id`: ObjectId

@@ -88,21 +88,29 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 7 — Non-Teaching Staff & Administrative Directory
-* **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
-* **Dependencies**: Phase 5.
-* **Deliverables**: `Staff` model and APIs; administrative department directory.
-* **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
-* **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
+### Phase 7 — Homework, Assignments & Study Material (IN PROGRESS / DESIGN)
+* **Objective**: Build Homework assignment creation with `SCHEDULED` release, multi-attempt submission tracking (`maxAttempts`), extended attachment metadata (storing URLs only), automatic arrival delay/late calculation, reserved `plagiarismStatus` field, teacher grading with reusable `RubricTemplate` evaluation and resubmission workflows, study material distribution with version history preservation and release/expiration windows (`publishAt`, `expireAt`), notification event hooks (planning only), and materialized summary analytics.
+* **Dependencies**: Phase 6 (requires `AcademicSession`, `PUBLISHED` `Timetable`, `TeachingAssignment`, `Enrollment`, `ClassSubject`).
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod validation schemas and TypeScript types for `Homework` (lifecycle `DRAFT` -> `SCHEDULED` -> `PUBLISHED` -> `CLOSED` -> `ARCHIVED`, `maxAttempts`, extended attachment metadata), `HomeworkSubmission` (`currentAttempt`, `plagiarismStatus`, `DRAFT` -> `SUBMITTED` -> `EVALUATED` -> `RETURNED`), `HomeworkEvaluation` (`rubricTemplateId`, `marks`, `grade`, `rubric`, `returnedForResubmission`), `RubricTemplate` (`isShared`), and `StudyMaterial` (`publishAt`, `expireAt`, `versionHistory`).
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#30` to `#33`; REST endpoints under `/api/v1/homework`, `/api/v1/study-material`, `/api/v1/rubrics`, and `/api/v1/homework/analytics/summary`; RBAC scoping for Teachers (`HOMEWORK_STUDY_MATERIAL_SCOPE`), Students, and Admins; notification event hooks documentation (planning only).
+  * **Frontend UI Module (`apps/web`)**: Interactive pages for Homework Dashboard, Homework List & Create Wizard (with scheduled release & rubric template selector), Student Submission Page (with attempt counter), Teacher Evaluation Page (with rubric template grading), Study Material Library (with release/expire badge), and Homework Analytics Dashboard.
+* **Acceptance Criteria**:
+  * Homework creation dynamically validates teacher assignment against `TeachingAssignment` and `PUBLISHED` Timetable without maintaining its own class-subject mapping; supports `SCHEDULED` automatic release.
+  * Students can submit only for their own active enrollments up to `maxAttempts`; late submissions are automatically flagged with arrival delay (`lateMinutes`).
+  * Teacher grading references reusable `RubricTemplate` or custom rubrics, records marks/grades, and supports returning for resubmission.
+  * Study material updates preserve immutable version history snapshots (`versionHistory`) and enforce `publishAt`/`expireAt` windows.
+  * Homework analytics uses a Materialized Summary Cache for high-performance reporting.
+* **Tests Required**: Comprehensive suite `TEST-HOMEWORK-001` to `TEST-HOMEWORK-016` covering duplicate & multi-attempt submission prevention, late submission tracking, evaluation/resubmission workflow, Teacher RBAC, Student RBAC, extended attachment metadata validation, version history preservation, materialized analytics, unpublished timetable blocking, scheduled release auto-publication, rubric template sharing, and study material windows.
 
 ---
 
-### Phase 8 — Homework & Study Material Distribution
-* **Objective**: Build Homework assignment creation, file attachment handling, student submission upload, and teacher grading.
-* **Dependencies**: Phase 5.
-* **Deliverables**: `Homework`, `HomeworkSubmission`, `StudyMaterial` models and APIs; UI creation wizard; Parent homework feed.
-* **Acceptance Criteria**: Teacher creates homework with due date; students submit attachments; teacher marks submission as checked.
-* **Tests Required**: Homework lifecycle workflow test (`TEST-FLOW-HW`); file upload MIME validation test.
+### Phase 8 — Non-Teaching Staff & Administrative Directory
+* **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
+* **Dependencies**: Phase 7.
+* **Deliverables**: `Staff` model and APIs; administrative department directory.
+* **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
+* **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
 
 ---
 

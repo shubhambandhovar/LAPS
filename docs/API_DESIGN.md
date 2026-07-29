@@ -261,12 +261,37 @@ Standard collection endpoints accept uniform URL query parameters:
 * **Attendance Analytics (`/api/v1/attendance/analytics`)**:
   * `GET  /api/v1/attendance/analytics/summary`: Retrieve aggregate attendance percentage statistics for students, classes, sections, and teachers across monthly or academic session scopes. Employs a materialized summary aggregation cache (`(academicSessionId, studentId, month, year)`) for scalable reporting.
 
-### 5.8. Homework & Study Material (`/api/v1/homework`, `/api/v1/materials`)
-* `GET  /api/v1/homework`: List homework assignments (scoped to teacher assignments, student class, or parent children).
-* `POST /api/v1/homework`: Create homework assignment with optional attachment URLs.
-* `POST /api/v1/homework/:homeworkId/submit`: Student submits homework attachment/remarks.
-* `PATCH /api/v1/homework/submissions/:submissionId/evaluate`: Teacher grades/reviews homework submission.
-* `POST /api/v1/materials`: Teacher uploads study material PDF/resource for assigned class.
+### 5.8. Homework, Assignments & Study Material (`/api/v1/homework`, `/api/v1/study-material`, `/api/v1/rubrics` — Phase 7)
+* **Homework Dependency Contract**: Homework endpoints do not maintain their own schedule or class-subject mapping. They must dynamically validate against active `AcademicSession`, `PUBLISHED` Timetable slots (`Timetable.status === "PUBLISHED"`), active `TeachingAssignment` scopes, and `Enrollment` records.
+* **Homework Management (`/api/v1/homework`)**:
+  * `GET  /api/v1/homework`: List homework assignments with pagination, filtering (`classId`, `sectionId`, `subjectId`, `teacherId`, `status: "DRAFT" | "SCHEDULED" | "PUBLISHED" | "CLOSED" | "ARCHIVED"`, `homeworkType`, `dueDate` range), and searching (`title`, `description`). Scoped by RBAC (Teacher: assigned classes only; Student: own enrollments only).
+  * `GET  /api/v1/homework/:id`: Retrieve detailed homework assignment including extended attachment metadata (`url`, `type`, `title`, `fileName`, `fileSize`, `mimeType`, `uploadedAt` — storing URLs only) and submission summary statistics.
+  * `POST /api/v1/homework`: Create homework assignment (`title`, `description`, `instructions`, `homeworkType`, `maxAttempts`, `subjectId`, `classId`, `sectionId`, `academicSessionId`, `assignedDate`, `dueDate`, `scheduledPublishAt`, `maxMarks`, `attachments` Array with extended metadata, `status`). Rejects with `403 RBAC_PERMISSION_DENIED` if teacher lacks `TeachingAssignment` for that section/subject or if timetable is not `PUBLISHED`.
+  * `PUT  /api/v1/homework/:id`: Update homework assignment details, instructions, due date, scheduled publish time, attachments, or status (`SCHEDULED` auto-publishes when `scheduledPublishAt <= now`).
+  * `PATCH /api/v1/homework/:id/archive`: Soft-archive homework assignment (`status: "ARCHIVED"`).
+* **Student Submissions (`/api/v1/homework/:homeworkId/submissions`, `/api/v1/homework/submissions/my`)**:
+  * `GET  /api/v1/homework/:homeworkId/submissions`: List all student submissions for a homework assignment (with pagination, filtering by evaluation status `SUBMITTED` | `EVALUATED` | `RETURNED`, attempt number `currentAttempt`, late status, and reserved `plagiarismStatus: "NOT_CHECKED" | "CHECKED"`).
+  * `GET  /api/v1/homework/submissions/my`: Student list of own homework submissions across assignments.
+  * `POST /api/v1/homework/:homeworkId/submissions`: Student submit homework (`attachments` Array with extended metadata, `remarks`, `submittedAt`). Automatically increments `currentAttempt` (up to `homework.maxAttempts`), sets `plagiarismStatus: "NOT_CHECKED"`, and calculates `isLate: boolean` and `lateMinutes: number` based on `homework.dueDate`.
+  * `PUT  /api/v1/homework/submissions/:id`: Student update draft or resubmit a returned submission (`currentAttempt + 1` if within `maxAttempts`).
+  * `PATCH /api/v1/homework/submissions/:id/archive`: Soft-archive submission (`status: "ARCHIVED"`).
+* **Teacher Evaluation (`/api/v1/homework/submissions/:submissionId/evaluate`)**:
+  * `PATCH /api/v1/homework/submissions/:submissionId/evaluate`: Teacher evaluate student submission (`rubricTemplateId` optional template reference, `marks`, `grade`, `remarks`, `rubric: Array<{ criterion, marksAwarded, maxMarks, comment }>`, `returnedForResubmission: boolean`). Updates submission status to `EVALUATED` or `RETURNED`.
+* **Rubric Templates (`/api/v1/rubrics`)**:
+  * `GET  /api/v1/rubrics`: List reusable rubric templates scoped to teacher or shared departmental subject templates.
+  * `POST /api/v1/rubrics`: Create reusable rubric template (`title`, `description`, `subjectId`, `criteria: Array<{ criterion, maxMarks, description }>`, `isShared`).
+  * `PUT  /api/v1/rubrics/:id`: Update rubric template criteria or sharing status.
+  * `PATCH /api/v1/rubrics/:id/archive`: Soft-archive rubric template (`status: "ARCHIVED"`).
+* **Study Material (`/api/v1/study-material`)**:
+  * `GET  /api/v1/study-material`: List study materials with pagination, filtering (`classId`, `sectionId`, `subjectId`, `teacherId`, `materialType`), and searching (`title`, `description`). Respects release/expiration windows (`publishAt`, `expireAt`).
+  * `GET  /api/v1/study-material/:id`: Retrieve study material details including complete `versionHistory` array.
+  * `POST /api/v1/study-material`: Upload/create study material (`title`, `description`, `materialType`, `fileUrl`, `fileMimeType`, `publishAt`, `expireAt`, `classId`, `sectionId`, `subjectId`, `academicSessionId`). Scoped to assigned teacher classes.
+  * `PUT  /api/v1/study-material/:id`: Update study material or upload a new file version. Automatically appends previous state to `versionHistory` (`version`, `fileUrl`, `materialType`, `changedAt`, `changedBy`, `changelog`) and increments `currentVersion`.
+  * `PATCH /api/v1/study-material/:id/archive`: Soft-archive study material (`status: "ARCHIVED"`).
+* **Notification Event Hooks (Planning Only — No Implementation)**:
+  * System defines event hooks for `HOMEWORK_PUBLISHED` (triggered when homework moves from `DRAFT`/`SCHEDULED` to `PUBLISHED`), `HOMEWORK_DUE_REMINDER` (triggered 24h before `dueDate`), and `HOMEWORK_EVALUATED` (triggered when submission is graded) for future SMS/Email/Push integrations.
+* **Homework & Study Material Analytics (`/api/v1/homework/analytics/summary`)**:
+  * `GET  /api/v1/homework/analytics/summary`: Retrieve aggregate homework analytics including `submission percentage`, `pending percentage`, `late percentage`, `average marks`, `class summary`, and `teacher summary`. Uses a Materialized Summary Cache (`HomeworkSummaryCache` keyed by `(academicSessionId, teacherId, classId, subjectId, month, year)`) to support high-scale real-time reporting.
 
 ### 5.9. Examinations, Marks & Report Cards (`/api/v1/exams`)
 * `GET  /api/v1/exams`: List examination schedules for the current session.

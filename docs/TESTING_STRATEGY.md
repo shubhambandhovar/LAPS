@@ -199,3 +199,37 @@ The Curriculum, Timetable, and Academic Calendar test suite guarantees database 
     * Query `GET /api/v1/attendance/analytics/summary` -> Asserts accurate computation of student attendance %, class %, section %, and defaulter identification (< 75% attendance).
 14. **Attendance Entry Historical Snapshots, Source & Late Minutes (`TEST-ATTENDANCE-014`)**:
     * Mark attendance with `attendanceSource: "MANUAL"`, status `LATE`, and `lateMinutes: 15` -> Asserts `AttendanceEntry` correctly stores arrival delay and historical snapshot fields (`studentName`, `rollNumber`, `className`, `sectionName`).
+
+### 3.9. Homework, Assignments & Study Material Verification Suite (`TEST-HOMEWORK-001` through `TEST-HOMEWORK-016` — Phase 7)
+1. **Duplicate & Multi-Attempt Submission Prevention (`TEST-HOMEWORK-001`)**:
+   * Attempt to submit a submission beyond `maxAttempts` or a duplicate concurrent active attempt for the same `homeworkId` -> Asserts system blocks submission with `409 Conflict` / `400 Bad Request`.
+2. **Late Submission Tracking (`TEST-HOMEWORK-002`)**:
+   * Student submits homework after `homework.dueDate` -> Asserts `isLate === true` and `lateMinutes` accurately records the arrival delay.
+3. **Evaluation Workflow & Resubmission (`TEST-HOMEWORK-003`)**:
+   * Teacher evaluates submission with `marks`, `grade`, `remarks`, `rubric`, and `returnedForResubmission: true` -> Asserts submission status transitions to `RETURNED` and student is permitted to resubmit if `currentAttempt < maxAttempts`.
+4. **Teacher RBAC & Timetable Scoping (`TEST-HOMEWORK-004`)**:
+   * Teacher attempts to create homework for an unassigned section or an unpublished timetable -> Asserts system blocks creation with `403 RBAC_PERMISSION_DENIED`.
+5. **Student RBAC Enrollment Scoping (`TEST-HOMEWORK-005`)**:
+   * Student attempts to view or submit homework for an unenrolled class/section -> Asserts access is denied with `403 RBAC_PERMISSION_DENIED`.
+6. **Attachment Extended Metadata & URL Validation (`TEST-HOMEWORK-006`)**:
+   * Verify homework and submission attachment payloads accept valid URL strings and required extended metadata (`fileName`, `fileSize`, `mimeType`, `uploadedAt`), and reject invalid payload structures.
+7. **Study Material Version History Preservation (`TEST-HOMEWORK-007`)**:
+   * Teacher updates existing `StudyMaterial` file URL or type -> Asserts previous state is appended to `versionHistory` array and `currentVersion` increments.
+8. **Homework Analytics Summary Calculation (`TEST-HOMEWORK-008`)**:
+   * Query `/api/v1/homework/analytics/summary` -> Asserts accurate aggregation of `submission percentage`, `pending percentage`, `late percentage`, and `average marks` across classes and teachers using the Materialized Summary Cache.
+9. **Unpublished Timetable Homework Block (`TEST-HOMEWORK-009`)**:
+   * Teacher attempts to publish homework when timetable status is `DRAFT` or `ARCHIVED` -> Asserts rejection with `400 Bad Request` / `403 Forbidden`.
+10. **Soft Delete & Archiving (`TEST-HOMEWORK-010`)**:
+    * Admin or Teacher calls `PATCH /api/v1/homework/:id/archive` -> Asserts homework status transitions to `"ARCHIVED"` without hard deletion.
+11. **Admin Unrestricted Institutional Override (`TEST-HOMEWORK-011`)**:
+    * Verifies `SUPER_ADMIN` and `SCHOOL_ADMIN` can inspect, edit, evaluate, and archive any homework or study material across any section or subject.
+12. **Study Material Class-Subject Scoping (`TEST-HOMEWORK-012`)**:
+    * Query `/api/v1/study-material` with class, section, subject, and teacher filters -> Asserts correct filtering and scoping of downloadable learning resources.
+13. **Scheduled Homework Automatic Publication (`TEST-HOMEWORK-013`)**:
+    * Create homework with `status: "SCHEDULED"` and `scheduledPublishAt` -> Asserts assignment remains invisible to students until `scheduledPublishAt <= now`, at which point it automatically transitions to `"PUBLISHED"`.
+14. **Multi-Attempt Submission Tracking (`TEST-HOMEWORK-014`)**:
+    * Student submits multiple attempts for a homework assignment configured with `maxAttempts: 3` -> Asserts `currentAttempt` increments correctly (`1`, `2`, `3`) and blocks attempts when `currentAttempt > 3`.
+15. **Rubric Template Reusability & Shared Scoping (`TEST-HOMEWORK-015`)**:
+    * Create reusable `RubricTemplate` with `isShared: true` -> Asserts other teachers assigned to the same `subjectId` can reference `rubricTemplateId` during evaluation.
+16. **Study Material Release & Expiration Windows (`TEST-HOMEWORK-016`)**:
+    * Create study material with `publishAt` and `expireAt` -> Asserts student access is allowed only during the active window (`now >= publishAt` and `now <= expireAt`).

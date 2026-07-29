@@ -26,5 +26,9 @@ export * from './AttendanceEntry';
 export * from './LeaveRequest';
 export * from './AttendanceCorrection';
 export * from './AttendanceLockRule';
+export * from './Homework';
+export * from './HomeworkSubmission';
+export * from './StudyMaterial';
+export * from './RubricTemplate';
 
 

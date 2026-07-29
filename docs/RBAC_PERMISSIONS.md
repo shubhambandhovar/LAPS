@@ -98,6 +98,18 @@ When a Teacher or Admin accesses attendance, attendance corrections, lock rules,
    * **Teacher Leaves**: Can only be reviewed and approved/rejected by `SCHOOL_ADMIN` or `SUPER_ADMIN`.
    * When an approved student leave overlaps with an attendance session, the student's attendance entry is automatically recorded or updated with `attendanceSource: "LEAVE"` and status `APPROVED_LEAVE` or `MEDICAL_LEAVE`.
 
+### 3.6. Homework & Study Material Scoping (`HOMEWORK_STUDY_MATERIAL_SCOPE` — Phase 7)
+When a Teacher, Student, or Admin interacts with homework assignments, student submissions, evaluations, study materials, or rubric templates:
+1. **Teacher Creation & Evaluation Scope**:
+   * A Teacher can create homework (`POST /api/v1/homework`), schedule release (`status: "SCHEDULED"`, `scheduledPublishAt`), upload study material (`POST /api/v1/study-material`), or evaluate student submissions (`PATCH /api/v1/homework/submissions/:id/evaluate`) ONLY for sections and subjects where they have an active `TeachingAssignment` AND where there is a `PUBLISHED` timetable slot (`Timetable.status === "PUBLISHED"`).
+   * Homework and study material must never maintain their own class-subject mapping; attempting to publish for an unassigned section returns `403 RBAC_PERMISSION_DENIED`.
+   * Teachers can create reusable rubric templates (`POST /api/v1/rubrics`). When `isShared === true`, other teachers assigned to the same `subjectId` can reference the rubric template during evaluation.
+2. **Student Submission & Access Scope**:
+   * A Student can view published homework and study materials (`status: "PUBLISHED"`) ONLY for their own active `Enrollment` in that academic session, class, and section, and only within active release/expiration windows (`publishAt`, `expireAt`).
+   * A Student can submit homework (`POST /api/v1/homework/:homeworkId/submissions`) and upload revisions up to `maxAttempts` ONLY for their own enrollment. Attempting to submit for an unenrolled section or on behalf of another student is blocked with `403 RBAC_PERMISSION_DENIED`.
+3. **Admin Unrestricted Access**:
+   * `SUPER_ADMIN` and `SCHOOL_ADMIN` possess institutional override capabilities to inspect, edit, archive, and audit all homework assignments, student submissions, teacher evaluations, rubric templates, and study materials across all classes and teachers.
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

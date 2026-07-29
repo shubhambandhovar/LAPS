@@ -151,10 +151,51 @@ The Curriculum, Timetable, and Academic Calendar test suite guarantees database 
    * Create a bell schedule with `scopeType: "CLASS"` and `targetClassIds` -> Asserts schedule is returned when querying for that class and excluded for other classes.
    * Create a bell schedule with `validFrom` / `validTo` -> Asserts queries filter out schedules outside the valid date range.
 11. **Timetable Versioning & Published Isolation (`TEST-CURRICULUM-011`)**:
-   * Create timetable slots with `status: "DRAFT"` -> Asserts slots are visible to Admin queries but excluded when Teacher queries `GET /api/v1/timetables/my-timetable`.
-   * Execute `POST /api/v1/timetables/publish` -> Asserts slot status becomes `"PUBLISHED"` and is now visible to Teacher queries.
+    * Create timetable slots with `status: "DRAFT"` -> Asserts slots are visible to Admin queries but excluded when Teacher queries `GET /api/v1/timetables/my-timetable`.
+    * Execute `POST /api/v1/timetables/publish` -> Asserts slot status becomes `"PUBLISHED"` and is now visible to Teacher queries.
 12. **Curriculum Constraints & Workload Computation (`TEST-CURRICULUM-012`)**:
-   * Configure `ClassSubject` with `minPeriodsPerWeek: 5` and `maxPeriodsPerWeek: 6`.
-   * Query `GET /api/v1/timetables/workload/:teacherId` -> Asserts correct computation of daily periods, total weekly periods, free periods, and overload status.
+    * Configure `ClassSubject` with `minPeriodsPerWeek: 5` and `maxPeriodsPerWeek: 6`.
+    * Query `GET /api/v1/timetables/workload/:teacherId` -> Asserts correct computation of daily periods, total weekly periods, free periods, and overload status.
 13. **Recurring Calendar Event Validation (`TEST-CURRICULUM-013`)**:
-   * Create an `AcademicCalendarEvent` with `isRecurring: true` and `recurrenceRule: { frequency: "WEEKLY", count: 10 }` -> Asserts recurrence rule persistence and date range query matching.
+    * Create an `AcademicCalendarEvent` with `isRecurring: true` and `recurrenceRule: { frequency: "WEEKLY", count: 10 }` -> Asserts recurrence rule persistence and date range query matching.
+
+### 3.8. Attendance & Leave Management Verification Suite (`TEST-ATTENDANCE-001` through `TEST-ATTENDANCE-013` — Phase 6)
+1. **Duplicate Attendance Prevention (`TEST-ATTENDANCE-001`)**:
+   * Mark daily attendance for Section A on `2026-08-01` -> Asserts HTTP `201 Created`.
+   * Attempt marking a second daily attendance session for Section A on `2026-08-01` -> Asserts HTTP `409 Conflict: Attendance session already marked for this date/section`.
+2. **Wrong Teacher Marking Attendance (`TEST-ATTENDANCE-002`)**:
+   * Authenticate as Teacher B (not assigned to Section A or Subject Math).
+   * Attempt `POST /api/v1/attendance` for Section A -> Asserts HTTP `403 Forbidden: Teacher not authorized to mark attendance for this section/subject`.
+3. **Attendance After Timetable Archive (`TEST-ATTENDANCE-003`)**:
+   * Archive a timetable slot (`status: "ARCHIVED"`) or leave it in `"DRAFT"`.
+   * Attempt marking period-wise attendance for that slot -> Asserts HTTP `400 Bad Request` / `409 Conflict: Cannot mark attendance for an unpublished or archived timetable period`.
+4. **Attendance on Holidays (`TEST-ATTENDANCE-004`)**:
+   * Create an official holiday (`Holiday.affectsAttendance === true`) on `2026-08-15`.
+   * Attempt marking attendance on `2026-08-15` -> Asserts HTTP `400 Bad Request` / `409 Conflict: Cannot mark attendance on an official holiday`.
+5. **Attendance on Emergency Closure (`TEST-ATTENDANCE-005`)**:
+   * Configure an emergency closure date in `AcademicCalendarEvent` or `WorkingDayRule`.
+   * Attempt marking attendance on that date -> Asserts HTTP `409 Conflict: School is closed due to emergency closure`.
+6. **Attendance Lifecycle, Lock & Freeze Enforcement (`TEST-ATTENDANCE-006`)**:
+   * Save session in `DRAFT` -> submit (`SUBMITTED`) -> lock (`sessionStatus: "LOCKED"` or exceed `lockAfterHours`).
+   * Authenticate as Teacher -> Attempt modifying a locked entry -> Asserts HTTP `403 Forbidden: Attendance session is locked`.
+   * Trigger report-card generation freeze (`PATCH /api/v1/attendance/:id/freeze`) -> Asserts `sessionStatus: "FROZEN"` and `isFrozen: true`.
+   * Attempt modifying frozen attendance as Teacher or standard Admin -> Asserts HTTP `403 Forbidden: Attendance session is frozen due to report card generation`.
+   * Call `PATCH /api/v1/attendance/:id/reopen` with mandatory audit reason -> Asserts session transitions back to `LOCKED` / `SUBMITTED`.
+7. **Attendance Correction Workflow (`TEST-ATTENDANCE-007`)**:
+   * Teacher submits `POST /api/v1/attendance/corrections` with mandatory reason -> Asserts HTTP `201 Created` (`correctionStatus: "PENDING"`).
+   * Admin calls `PATCH /api/v1/attendance/corrections/:id/review` with `"APPROVED"` -> Asserts `AttendanceEntry.attendanceStatus` is updated and `statusHistory` contains immutable audit record.
+8. **Leave Approval, Controlled Leave Types & Automatic Attendance Linkage (`TEST-ATTENDANCE-008`)**:
+   * Submit student leave request with controlled enum `leaveType: "MEDICAL"` -> Class Teacher approves -> Asserts existing or newly generated `AttendanceEntry` records for those dates are automatically updated with `attendanceSource: "LEAVE"` and status `MEDICAL_LEAVE`.
+9. **Teacher Leave Review Scoping (`TEST-ATTENDANCE-009`)**:
+   * Submit teacher leave request -> Attempt review as another Teacher -> Asserts HTTP `403 Forbidden`.
+   * Review as `SCHOOL_ADMIN` -> Asserts HTTP `200 OK`.
+10. **Bulk Attendance Marking (`TEST-ATTENDANCE-010`)**:
+    * Execute `POST /api/v1/attendance/bulk` across multiple sections -> Asserts atomic transaction commit and correct entry count creation.
+11. **Attendance Register Query Verification (`TEST-ATTENDANCE-011`)**:
+    * Query `GET /api/v1/attendance/register` across Daily, Weekly, Monthly, and Yearly frequencies -> Asserts accurate tabulation by student, class, section, subject, and teacher.
+12. **RBAC Attendance & Leave Scoping (`TEST-ATTENDANCE-012`)**:
+    * Verifies `SUPER_ADMIN`, `SCHOOL_ADMIN`, and `TEACHER` isolation across attendance registers, leave requests, and lock rule configurations.
+13. **Attendance Percentage & Analytics Calculation (`TEST-ATTENDANCE-013`)**:
+    * Query `GET /api/v1/attendance/analytics/summary` -> Asserts accurate computation of student attendance %, class %, section %, and defaulter identification (< 75% attendance).
+14. **Attendance Entry Historical Snapshots, Source & Late Minutes (`TEST-ATTENDANCE-014`)**:
+    * Mark attendance with `attendanceSource: "MANUAL"`, status `LATE`, and `lateMinutes: 15` -> Asserts `AttendanceEntry` correctly stores arrival delay and historical snapshot fields (`studentName`, `rollNumber`, `className`, `sectionName`).

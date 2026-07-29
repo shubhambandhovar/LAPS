@@ -621,28 +621,158 @@ Dedicated institutional holiday catalog supporting National, State, School, Opti
 
 ---
 
-### 3.6. Academic Operations & Classroom Collections (Future Phases)
+### 3.6. Attendance & Leave Management Collections (Phase 6)
 
 #### 25. `Attendance`
-Daily attendance record per student enrollment.
-* **Future Attendance Integration Contract (Phase 7)**: Attendance marking does not maintain its own schedule or calendar. Daily and period-wise attendance must dynamically consume published Timetable slots (`status: "PUBLISHED"`, to determine periods and subjects), active TeachingAssignment scopes (to verify authorized teacher), and active Enrollment records (to determine student roster), cross-referenced with Holiday and WorkingDayRule calendar status.
+Represents the attendance marking session for a class/section on a specific date (either `DAILY` for class teacher or `PERIOD` for subject teacher). Attendance MUST depend on `AcademicSession -> Published Timetable -> TeachingAssignment -> Enrollment -> AcademicCalendar -> WorkingDayRule -> Holiday`. Attendance NEVER maintains its own schedule.
+* **Future Analytics Materialized Summary Strategy (Planning Only)**: For large-scale multi-year reporting, daily attendance entries will be aggregated nightly (or upon session lock) into a materialized summary collection/cache keyed by `(academicSessionId, studentId, month, year)`. This avoids scanning millions of `AttendanceEntry` rows for session-wide attendance percentage calculations and defaulter detection (`< 75%`).
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
-  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
-  * `studentId`: ObjectId -> `Student` (Indexed)
-  * `classId`: ObjectId -> `Class`
-  * `sectionId`: ObjectId -> `Section`
-  * `date`: Date (Normalized to midnight UTC)
-  * `status`: Enum (`"PRESENT" | "ABSENT" | "LATE" | "LEAVE"`)
-  * `markedByUserId`: ObjectId -> `User`
-  * `remarks`: String (Optional)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, indexed)
+  * `classId`: ObjectId -> `Class` (Required, indexed)
+  * `sectionId`: ObjectId -> `Section` (Required, indexed)
+  * `attendanceType`: Enum (`"DAILY" | "PERIOD"`) (Default `"DAILY"`)
+  * `date`: String (`"YYYY-MM-DD"`, required, indexed)
+  * `timetablePeriodId`: ObjectId -> `TimetablePeriod` (Optional, required if `attendanceType === "PERIOD"`)
+  * `subjectId`: ObjectId -> `Subject` (Optional, required if `attendanceType === "PERIOD"`)
+  * `teachingAssignmentId`: ObjectId -> `TeachingAssignment` (Required, links to authorized Teacher and scope)
+  * `sessionStatus`: Enum (`"DRAFT" | "SUBMITTED" | "LOCKED" | "FROZEN"`) (Default `"DRAFT"` — lifecycle transitions from DRAFT -> SUBMITTED -> LOCKED -> FROZEN)
+  * `markedByUserId`: ObjectId -> `User` (Teacher or Admin who marked attendance)
+  * `markedAt`: Date (Default `Date.now`)
+  * `isLocked`: Boolean (Default `false` — synced with `sessionStatus === "LOCKED" | "FROZEN"`)
+  * `lockedAt`: Date (Optional)
+  * `lockedByUserId`: ObjectId -> `User` (Optional)
+  * `lockReason`: String (Optional, e.g., `"AUTO_LOCK_TIME"`, `"AUTO_LOCK_DAY"`, `"ADMIN_LOCK"`)
+  * `isFrozen`: Boolean (Default `false` — set when report-card generation freezes attendance)
+  * `frozenAt`: Date (Optional)
+  * `frozenByUserId`: ObjectId -> `User` (Optional)
+  * `freezeReason`: String (Optional, e.g., `"REPORT_CARD_GENERATED"`)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User`
+  * `archivedAt`: Date
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ schoolId: 1, enrollmentId: 1, date: 1 }` (Unique — one attendance mark per student per day)
-  * `{ schoolId: 1, academicSessionId: 1, classId: 1, sectionId: 1, date: 1 }`
+  * `{ academicSessionId: 1, classId: 1, sectionId: 1, date: 1, attendanceType: 1, timetablePeriodId: 1 }` (Unique — ensures exactly one attendance session per section per date for daily, or per section per date per period for period-wise)
+  * `{ teachingAssignmentId: 1, date: 1 }`
+  * `{ status: 1, sessionStatus: 1, isLocked: 1, isFrozen: 1 }`
 
-#### 26. `Homework`
+#### 26. `AttendanceEntry`
+Individual student attendance record within an `Attendance` session.
+* **Fields**:
+  * `_id`: ObjectId
+  * `attendanceId`: ObjectId -> `Attendance` (Required, indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, indexed)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, indexed)
+  * `studentId`: ObjectId -> `Student` (Required, indexed)
+  * `classId`: ObjectId -> `Class` (Required)
+  * `sectionId`: ObjectId -> `Section` (Required)
+  * `studentName`: String (Historical snapshot of First Name + Last Name at time of attendance)
+  * `rollNumber`: String (Optional historical snapshot of student roll number)
+  * `className`: String (Historical snapshot of class name, e.g., `"Class 10"`)
+  * `sectionName`: String (Historical snapshot of section name, e.g., `"Section A"`)
+  * `date`: String (`"YYYY-MM-DD"`, required, indexed)
+  * `attendanceStatus`: Enum (`"PRESENT" | "ABSENT" | "LATE" | "HALF_DAY" | "MEDICAL_LEAVE" | "APPROVED_LEAVE" | "UNAPPROVED_LEAVE" | "EXCUSED"`) (Required, default `"PRESENT"`)
+  * `attendanceSource`: Enum (`"MANUAL" | "LEAVE" | "SYSTEM" | "IMPORT" | "BIOMETRIC_RESERVED"`) (Default `"MANUAL"`)
+  * `lateMinutes`: Number (Optional, default `0` — records arrival delay in minutes for punctuality reporting)
+  * `remarks`: String (Optional, max 200 chars)
+  * `leaveRequestId`: ObjectId -> `LeaveRequest` (Optional, linked if status is `APPROVED_LEAVE` or `MEDICAL_LEAVE`)
+  * `statusHistory`: Array of `{ oldStatus: string, newStatus: string, changedBy: ObjectId, changedAt: Date, reason: string }` (Preserves audit trail of corrections and overrides)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User`
+  * `archivedAt`: Date
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ attendanceId: 1, studentId: 1 }` (Unique — one entry per student per attendance session)
+  * `{ academicSessionId: 1, studentId: 1, date: 1 }`
+  * `{ classId: 1, sectionId: 1, date: 1, attendanceStatus: 1 }`
+  * `{ attendanceSource: 1 }`
+
+#### 27. `LeaveRequest`
+Represents a leave application submitted for a Student or a Teacher with approval workflows and attachment metadata.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, indexed)
+  * `applicantType`: Enum (`"STUDENT" | "TEACHER"`) (Required)
+  * `studentId`: ObjectId -> `Student` (Optional, required if `applicantType === "STUDENT"`)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Optional, required if `applicantType === "STUDENT"`)
+  * `teacherId`: ObjectId -> `Teacher` (Optional, required if `applicantType === "TEACHER"`)
+  * `leaveType`: Enum (`"CASUAL" | "MEDICAL" | "EMERGENCY" | "SPORTS" | "OFFICIAL" | "OTHER"`) (Required controlled enum)
+  * `startDate`: String (`"YYYY-MM-DD"`, required)
+  * `endDate`: String (`"YYYY-MM-DD"`, required)
+  * `totalDays`: Number (Required, computed)
+  * `reason`: String (Required, max 500 chars)
+  * `attachmentUrl`: String (Optional — URL/metadata for doctor certificate or leave letter)
+  * `leaveStatus`: Enum (`"PENDING" | "APPROVED" | "REJECTED" | "CANCELLED"`) (Default `"PENDING"`)
+  * `reviewedByUserId`: ObjectId -> `User` (Optional — Class Teacher, School Admin, or Super Admin who reviewed)
+  * `reviewedAt`: Date (Optional)
+  * `reviewerRemarks`: String (Optional)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User`
+  * `archivedAt`: Date
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1, studentId: 1, startDate: 1, endDate: 1 }`
+  * `{ academicSessionId: 1, teacherId: 1, startDate: 1, endDate: 1 }`
+  * `{ leaveStatus: 1 }`
+
+#### 28. `AttendanceCorrection`
+Formal correction request submitted by a Teacher to modify attendance after lock or initial submission, requiring Admin approval.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required)
+  * `attendanceId`: ObjectId -> `Attendance` (Required, indexed)
+  * `attendanceEntryId`: ObjectId -> `AttendanceEntry` (Required, indexed)
+  * `studentId`: ObjectId -> `Student` (Required)
+  * `requestedByUserId`: ObjectId -> `User` (Teacher requesting correction)
+  * `oldStatus`: Enum (`"PRESENT" | "ABSENT" | "LATE" | "HALF_DAY" | "MEDICAL_LEAVE" | "APPROVED_LEAVE" | "UNAPPROVED_LEAVE" | "EXCUSED"`)
+  * `newStatus`: Enum (`"PRESENT" | "ABSENT" | "LATE" | "HALF_DAY" | "MEDICAL_LEAVE" | "APPROVED_LEAVE" | "UNAPPROVED_LEAVE" | "EXCUSED"`)
+  * `reason`: String (Required, max 500 chars)
+  * `correctionStatus`: Enum (`"PENDING" | "APPROVED" | "REJECTED"`) (Default `"PENDING"`)
+  * `reviewedByUserId`: ObjectId -> `User` (Admin who approved/rejected)
+  * `reviewedAt`: Date (Optional)
+  * `reviewerRemarks`: String (Optional)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User`
+  * `archivedAt`: Date
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ attendanceEntryId: 1, correctionStatus: 1 }`
+  * `{ academicSessionId: 1, correctionStatus: 1 }`
+
+#### 29. `AttendanceLockRule`
+Configurable rule governing automatic attendance locking after a specific cutoff time or number of days.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, indexed, unique)
+  * `lockAfterHours`: Number (Optional, e.g., 24 — locks attendance 24 hours after marking)
+  * `lockAfterTimeOfDay`: String (Optional, e.g., `"17:00"` — locks daily attendance at 5:00 PM on the same day)
+  * `allowTeacherCorrectionRequest`: Boolean (Default `true`)
+  * `adminOverrideEnabled`: Boolean (Default `true` — Admins can always override lock)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User`
+  * `archivedAt`: Date
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1 }` (Unique)
+
+### 3.7. Academic Operations & Classroom Collections (Future Phases)
+
+#### 30. `Homework`
 Homework assigned by an authorized teacher.
 * **Fields**:
   * `_id`: ObjectId
@@ -663,7 +793,7 @@ Homework assigned by an authorized teacher.
   * `{ schoolId: 1, classId: 1, sectionId: 1, status: 1, dueDate: 1 }`
   * `{ teacherId: 1, academicSessionId: 1 }`
 
-#### 27. `HomeworkSubmission`
+#### 31. `HomeworkSubmission`
 Student submission record for a homework assignment.
 * **Fields**:
   * `_id`: ObjectId
@@ -678,7 +808,7 @@ Student submission record for a homework assignment.
 * **Indexes**:
   * `{ homeworkId: 1, enrollmentId: 1 }` (Unique)
 
-#### 28. `StudyMaterial`
+#### 32. `StudyMaterial`
 Downloadable learning notes and study resources.
 * **Fields**:
   * `_id`: ObjectId
@@ -698,7 +828,7 @@ Downloadable learning notes and study resources.
 
 ### 3.7. Examination & Evaluation Collections (Future Phases)
 
-#### 29. `Exam`
+#### 33. `Exam`
 Top-level examination definition.
 * **Fields**:
   * `_id`: ObjectId
@@ -712,7 +842,7 @@ Top-level examination definition.
 * **Indexes**:
   * `{ schoolId: 1, academicSessionId: 1, name: 1 }`
 
-#### 30. `ExamSubject`
+#### 34. `ExamSubject`
 Configured maximum and passing marks for a subject in an exam.
 * **Fields**:
   * `_id`: ObjectId
@@ -726,7 +856,7 @@ Configured maximum and passing marks for a subject in an exam.
 * **Indexes**:
   * `{ examId: 1, classId: 1, subjectId: 1 }` (Unique)
 
-#### 31. `Mark`
+#### 35. `Mark`
 Individual student score in an ExamSubject.
 * **Fields**:
   * `_id`: ObjectId
@@ -741,7 +871,7 @@ Individual student score in an ExamSubject.
 * **Indexes**:
   * `{ examSubjectId: 1, enrollmentId: 1 }` (Unique)
 
-#### 32. `GradeRule`
+#### 36. `GradeRule`
 Configurable grading scale per session/school.
 * **Fields**:
   * `_id`: ObjectId
@@ -755,7 +885,7 @@ Configurable grading scale per session/school.
 * **Indexes**:
   * `{ schoolId: 1, academicSessionId: 1, gradeLetter: 1 }` (Unique)
 
-#### 33. `ReportCard`
+#### 37. `ReportCard`
 Compiled end-of-term student result sheet.
 * **Fields**:
   * `_id`: ObjectId
@@ -782,7 +912,7 @@ Compiled end-of-term student result sheet.
 
 ### 3.8. Financial Management Collections (Fees & Accounting)
 
-#### 34. `FeeStructure`
+#### 38. `FeeStructure`
 Master template of fee charges per class and session.
 * **Fields**:
   * `_id`: ObjectId
@@ -796,7 +926,7 @@ Master template of fee charges per class and session.
 * **Indexes**:
   * `{ schoolId: 1, academicSessionId: 1, classId: 1, feeHeadName: 1 }` (Unique)
 
-#### 35. `StudentFee`
+#### 39. `StudentFee`
 Applicable fee billing item assigned to a specific student enrollment.
 * **Fields**:
   * `_id`: ObjectId
@@ -815,7 +945,7 @@ Applicable fee billing item assigned to a specific student enrollment.
   * `{ enrollmentId: 1, feeStructureId: 1 }` (Unique)
   * `{ schoolId: 1, status: 1, dueDate: 1 }`
 
-#### 36. `Payment`
+#### 40. `Payment`
 Immutable transaction ledger for fee payments.
 * **Fields**:
   * `_id`: ObjectId
@@ -835,7 +965,7 @@ Immutable transaction ledger for fee payments.
   * `{ schoolId: 1, paymentTransactionId: 1 }` (Unique)
   * `{ studentId: 1, paymentDate: 1 }`
 
-#### 37. `Receipt`
+#### 41. `Receipt`
 Generated receipt metadata linking a payment to a printable PDF document.
 * **Fields**:
   * `_id`: ObjectId
@@ -852,7 +982,7 @@ Generated receipt metadata linking a payment to a printable PDF document.
 
 ### 3.9. Communication, CMS & Admissions Collections
 
-#### 38. `Notice`
+#### 42. `Notice`
 Public and portal circulars.
 * **Fields**:
   * `_id`: ObjectId
@@ -868,7 +998,7 @@ Public and portal circulars.
 * **Indexes**:
   * `{ schoolId: 1, publishDate: -1, isPublicWebsiteNotice: 1 }`
 
-#### 39. `Event`
+#### 43. `Event`
 School event calendar items.
 * **Fields**:
   * `_id`: ObjectId
@@ -883,7 +1013,7 @@ School event calendar items.
 * **Indexes**:
   * `{ schoolId: 1, eventStartDate: 1 }`
 
-#### 40. `AdmissionEnquiry`
+#### 44. `AdmissionEnquiry`
 Prospective student enquiry leads.
 * **Fields**:
   * `_id`: ObjectId
@@ -902,7 +1032,7 @@ Prospective student enquiry leads.
 * **Indexes**:
   * `{ schoolId: 1, status: 1, enquiryDate: -1 }`
 
-#### 41. `GalleryAlbum`
+#### 45. `GalleryAlbum`
 CMS photo gallery album container.
 * **Fields**:
   * `_id`: ObjectId
@@ -914,7 +1044,7 @@ CMS photo gallery album container.
 * **Indexes**:
   * `{ schoolId: 1, isPublished: 1 }`
 
-#### 42. `GalleryImage`
+#### 46. `GalleryImage`
 Individual photos within a GalleryAlbum.
 * **Fields**:
   * `_id`: ObjectId
@@ -925,7 +1055,7 @@ Individual photos within a GalleryAlbum.
 * **Indexes**:
   * `{ albumId: 1, order: 1 }`
 
-#### 43. `Document`
+#### 47. `Document`
 Secure repository for private student/teacher documents.
 * **Fields**:
   * `_id`: ObjectId
@@ -941,7 +1071,7 @@ Secure repository for private student/teacher documents.
 * **Indexes**:
   * `{ ownerType: 1, ownerId: 1, documentType: 1 }`
 
-#### 44. `AuditLog`
+#### 48. `AuditLog`
 Immutable security and administrative audit ledger.
 * **Fields**:
   * `_id`: ObjectId

@@ -72,3 +72,6 @@ export {
 } from './schemas/students.schema';
 export * from './types/curriculum';
 export * from './schemas/curriculum.schema';
+export * from './types/attendance';
+export * from './schemas/attendance.schema';
+

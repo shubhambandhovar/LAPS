@@ -80,6 +80,24 @@ When a Teacher accesses curriculum, timetable, bell schedules, periods, or acade
 3. **Admin Timetable Matrix Protection**: Any attempt by a Teacher to query `/api/v1/timetables?teacherId=<otherTeacherId>` or access another teacher's schedule matrix returns `403 Forbidden: Cannot view timetable of another teacher`. Teachers may only query `GET /api/v1/timetables?sectionId=<sectionId>` for sections where they have an active `TeachingAssignment`.
 4. **Published Timetable Isolation & Workload Metrics**: Teachers can only access timetable slots where `status === "PUBLISHED"`. Drafted or archived slots (`status === "DRAFT" | "ARCHIVED"`) are automatically excluded from teacher queries. Teachers can query their own workload metrics (`GET /api/v1/timetables/workload/:teacherId` where `teacherId === req.user.profileRef`).
 
+### 3.5. Attendance & Leave Scoping (`ATTENDANCE_LEAVE_SCOPE` — Phase 6)
+When a Teacher or Admin accesses attendance, attendance corrections, lock rules, or leave requests:
+1. **Attendance Marking Authorization**:
+   * For **Daily Attendance (`DAILY`)**: A Teacher can mark daily attendance (`POST /api/v1/attendance`) only for sections where they are the assigned Class Teacher (`TeachingAssignment.isClassTeacher === true`).
+   * For **Period Attendance (`PERIOD`)**: A Teacher can mark period attendance only for sections and subjects where they have an active `TeachingAssignment` AND where there is an active `PUBLISHED` Timetable slot (`Timetable.status === "PUBLISHED"`) assigning them to that period on that day of the week.
+   * Teachers can never manually choose subjects or periods they are not assigned (`403 Forbidden`).
+2. **Attendance on Holidays and Emergency Closures**: Attempting to mark attendance on an official holiday (`Holiday.affectsAttendance === true`) or emergency closure date returns `400 Bad Request` or `409 Conflict`.
+3. **Attendance Lifecycle & Corrections (`DRAFT` → `SUBMITTED` → `LOCKED` → `FROZEN`)**:
+   * Initial saving creates an attendance session in `DRAFT` state. Submitting transitions it to `SUBMITTED`, and auto-lock or manual admin lock transitions it to `LOCKED`.
+   * Once locked (`sessionStatus === "LOCKED"` or `isLocked === true`), Teachers cannot modify entries directly. Modifying a locked entry requires either an Admin override (`SUPER_ADMIN` or `SCHOOL_ADMIN`) or an approved `AttendanceCorrection` request submitted by the Teacher with a mandatory reason.
+4. **Attendance Freeze & Admin Reopen Capability**:
+   * When report cards are generated for an academic term or session, all related attendance sessions are transitioned to `FROZEN` (`sessionStatus === "FROZEN"`, `isFrozen === true`).
+   * A frozen attendance session cannot be modified by Teachers or standard Admins. Modifying a frozen session requires an authorized Admin (`SUPER_ADMIN` or `SCHOOL_ADMIN`) to explicitly invoke the reopen endpoint (`PATCH /api/v1/attendance/:id/reopen`) with a mandatory audit reason, transitioning `sessionStatus` back to `LOCKED` or `SUBMITTED`.
+5. **Leave Approval Workflows**:
+   * **Student Leaves**: Can be reviewed and approved/rejected by the student's assigned Class Teacher, `SCHOOL_ADMIN`, or `SUPER_ADMIN`. Uses the controlled `leaveType` enum (`CASUAL`, `MEDICAL`, `EMERGENCY`, `SPORTS`, `OFFICIAL`, `OTHER`).
+   * **Teacher Leaves**: Can only be reviewed and approved/rejected by `SCHOOL_ADMIN` or `SUPER_ADMIN`.
+   * When an approved student leave overlaps with an attendance session, the student's attendance entry is automatically recorded or updated with `attendanceSource: "LEAVE"` and status `APPROVED_LEAVE` or `MEDICAL_LEAVE`.
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

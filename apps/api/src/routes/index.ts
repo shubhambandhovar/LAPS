@@ -20,8 +20,11 @@ import timetableRoutes from './timetables.routes';
 import academicCalendarRoutes from './academicCalendar.routes';
 import workingDayRuleRoutes from './workingDayRules.routes';
 import holidayRoutes from './holidays.routes';
+import attendanceRoutes from './attendance.routes';
+import leaveRoutes from './leaves.routes';
 
 const router = Router();
+
 
 // Phase 1 Foundation: Mount Health Check endpoint
 router.use('/health', healthRoutes);
@@ -54,5 +57,10 @@ router.use('/academic-calendar', academicCalendarRoutes);
 router.use('/working-day-rules', workingDayRuleRoutes);
 router.use('/holidays', holidayRoutes);
 
+// Phase 6: Mount Attendance & Leave Management endpoints
+router.use('/attendance', attendanceRoutes);
+router.use('/leaves', leaveRoutes);
+
 export default router;
+
 

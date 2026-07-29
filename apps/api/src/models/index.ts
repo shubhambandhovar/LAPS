@@ -21,4 +21,10 @@ export * from './Timetable';
 export * from './AcademicCalendarEvent';
 export * from './WorkingDayRule';
 export * from './Holiday';
+export * from './Attendance';
+export * from './AttendanceEntry';
+export * from './LeaveRequest';
+export * from './AttendanceCorrection';
+export * from './AttendanceLockRule';
+
 

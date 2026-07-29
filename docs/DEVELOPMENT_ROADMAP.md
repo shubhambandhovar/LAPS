@@ -69,21 +69,31 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 6 — Administrative Staff & Department Scoping
+### Phase 6 — Attendance & Leave Management
+* **Objective**: Establish the complete Attendance & Leave Management domain for students and teachers, including daily and period-wise attendance sessions, attendance entries with historical snapshot fields and arrival delay tracking, leave approval workflows with controlled enum types, teacher correction requests, configurable auto-lock rules, attendance freeze after report-card generation, and attendance analytics with a materialized summary strategy.
+* **Dependencies**: Phase 5 (requires `AcademicSession`, `PUBLISHED` `Timetable`, `TeachingAssignment`, `Enrollment`, `AcademicCalendarEvent`, `WorkingDayRule`, and `Holiday`).
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod validation schemas and TypeScript types for `Attendance` (lifecycle `DRAFT` -> `SUBMITTED` -> `LOCKED` -> `FROZEN`), `AttendanceEntry` (`attendanceSource`, historical snapshots `studentName`, `rollNumber`, `className`, `sectionName`, `lateMinutes`), `LeaveRequest` (`CASUAL`, `MEDICAL`, `EMERGENCY`, `SPORTS`, `OFFICIAL`, `OTHER`), `AttendanceCorrection`, and `AttendanceLockRule`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#25` to `#29`; REST endpoints under `/api/v1/attendance` and `/api/v1/leaves`; freeze and explicit admin reopen endpoints (`PATCH /api/v1/attendance/:id/freeze`, `/reopen`); RBAC scoping for Teachers (`ATTENDANCE_LEAVE_SCOPE`), School Admins, and Super Admins.
+  * **Frontend UI Module (`apps/web`)**: Navigation and pages for Take Attendance (`<AttendanceSheet />`), Attendance Register, Bulk Attendance, Leave Requests, Attendance Corrections, and Attendance Analytics Dashboard.
+* **Acceptance Criteria**:
+  * Attendance marking dynamically resolves period, subject, teacher, and student roster from `PUBLISHED` Timetable without maintaining its own schedule.
+  * Attempting to mark attendance on an official holiday or emergency closure date is blocked (`400` / `409`).
+  * Teachers can only mark attendance for their assigned sections/subjects (`403 Forbidden` for unauthorized sections/subjects).
+  * Lifecycle progresses `DRAFT` -> `SUBMITTED` -> `LOCKED`; post-lock modifications by Teachers require an approved `AttendanceCorrection` request.
+  * Generating report cards freezes attendance (`FROZEN`); frozen sessions cannot be edited without an authorized Admin explicitly invoking `/reopen` with an audit reason.
+  * Student leave approval by Class Teacher automatically updates corresponding attendance entries to `APPROVED_LEAVE` or `MEDICAL_LEAVE` (`attendanceSource: "LEAVE"`).
+  * Historical snapshot fields preserve student and section names at the time of attendance.
+* **Tests Required**: Verification suite `TEST-ATTENDANCE-001` through `TEST-ATTENDANCE-014` covering duplicate prevention, wrong teacher denial, archived timetable denial, holidays, emergency closures, lock & freeze enforcement, correction workflow, leave linkage, teacher leave scoping, bulk marking, register queries, RBAC scoping, analytics computation, and historical snapshots / arrival delay tracking.
+
+---
+
+### Phase 7 — Non-Teaching Staff & Administrative Directory
 * **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
 * **Dependencies**: Phase 5.
 * **Deliverables**: `Staff` model and APIs; administrative department directory.
 * **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
 * **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
-
----
-
-### Phase 7 — Daily Student Attendance Module
-* **Objective**: Implement daily batch attendance marking, class rosters, and attendance summary calculators.
-* **Dependencies**: Phase 5.
-* **Deliverables**: `Attendance` model and API batch endpoints; Teacher UI `<AttendanceSheet />`; Parent/Student attendance calendar widgets.
-* **Acceptance Criteria**: Class Teacher can mark 40 students in one atomic request; duplicate marking on the same date is blocked; percentage calculates accurately.
-* **Tests Required**: Attendance batch workflow test (`TEST-FLOW-ATT`); teacher scope validation tests.
 
 ---
 

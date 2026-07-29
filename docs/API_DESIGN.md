@@ -232,11 +232,34 @@ Standard collection endpoints accept uniform URL query parameters:
   * `GET  /api/v1/working-day-rules`: Retrieve active working day rule configuration for an academic session.
   * `PUT  /api/v1/working-day-rules`: Create or update working day rules (`MON_TO_FRI`, `MON_TO_SAT`, `CUSTOM`, half-days, emergency closures).
 
-### 5.7. Attendance Management (`/api/v1/attendance` — Future Phase 7)
-* **Future Attendance Integration Contract**: Daily and period-wise attendance marking endpoints do not maintain their own schedule or calendar. They must dynamically consume `PUBLISHED` Timetable slots, active `TeachingAssignment` scopes, and active `Enrollment` records, cross-referenced with `Holiday` and `WorkingDayRule` calendar status.
-* `GET  /api/v1/attendance/sheet`: Retrieve daily class roster with attendance status for a date.
-* `POST /api/v1/attendance/batch`: Submit daily attendance batch for a section (scoped to Class Teacher or Admin).
-* `GET  /api/v1/attendance/student/:studentId`: Retrieve monthly attendance percentage and calendar for a student.
+### 5.7. Attendance & Leave Management (`/api/v1/attendance`, `/api/v1/leaves` — Phase 6)
+* **Attendance Integration Contract**: Daily and period-wise attendance marking endpoints do not maintain their own schedule or calendar. They must dynamically consume `PUBLISHED` Timetable slots (`status: "PUBLISHED"`), active `TeachingAssignment` scopes, and active `Enrollment` records, cross-referenced with `Holiday`, `WorkingDayRule`, and `AcademicCalendarEvent` status.
+* **Attendance Sessions & Register (`/api/v1/attendance`)**:
+  * `GET  /api/v1/attendance/session-context`: Given `date`, `classId`, `sectionId`, and optional `timetablePeriodId`, automatically resolve the authorized `Teacher`, current period, subject, and student roster (`Enrollment`) using the `PUBLISHED` Timetable. Rejects with `400` / `409` if the date is a holiday or emergency closure.
+  * `POST /api/v1/attendance`: Mark or update attendance batch for a class/section/period (initial save creates session in `DRAFT` state). Payloads capture `attendanceSource` (`MANUAL`, `LEAVE`, `SYSTEM`, `IMPORT`, `BIOMETRIC_RESERVED`), historical snapshot fields (`studentName`, `rollNumber`, `className`, `sectionName`), and optional `lateMinutes` for punctuality reporting. Validates Teacher RBAC scope against `TeachingAssignment` and `PUBLISHED` timetable slots.
+  * `POST /api/v1/attendance/:id/submit`: Transition attendance session lifecycle from `DRAFT` to `SUBMITTED`.
+  * `POST /api/v1/attendance/bulk`: Bulk-mark attendance across multiple sections or periods (Admin only or Teacher for their assigned multi-period block).
+  * `GET  /api/v1/attendance/register`: Retrieve structured daily, weekly, monthly, or yearly attendance register matrix filtered by student, class, section, subject, or teacher.
+  * `PATCH /api/v1/attendance/:id/lock`: Manually lock an attendance session (`sessionStatus: "LOCKED"` — Admin only).
+  * `PATCH /api/v1/attendance/:id/freeze`: Freeze attendance session (`sessionStatus: "FROZEN"` — invoked after report-card generation).
+  * `PATCH /api/v1/attendance/:id/reopen`: Reopen a frozen attendance session (`FROZEN` -> `LOCKED` / `SUBMITTED` — Admin only, requires mandatory audit reason).
+  * `PATCH /api/v1/attendance/:id/archive`: Soft-archive an attendance session and its entries (`status: "ARCHIVED"`).
+* **Attendance Corrections (`/api/v1/attendance/corrections`)**:
+  * `POST /api/v1/attendance/corrections`: Submit a formal correction request by a Teacher or Admin to change an attendance entry after submission or lock. Requires mandatory `reason`.
+  * `GET  /api/v1/attendance/corrections`: List pending, approved, or rejected correction requests (filterable by class, section, teacher, status).
+  * `PATCH /api/v1/attendance/corrections/:id/review`: Admin approve or reject a correction request. When approved, automatically mutates `AttendanceEntry.attendanceStatus` and records an immutable audit entry in `statusHistory`.
+* **Leave Management (`/api/v1/leaves`)**:
+  * `POST /api/v1/leaves`: Submit a leave application (`applicantType`: `STUDENT` or `TEACHER`) with date range, controlled `leaveType` (`CASUAL`, `MEDICAL`, `EMERGENCY`, `SPORTS`, `OFFICIAL`, `OTHER`), reason, and optional attachment URL.
+  * `GET  /api/v1/leaves`: Retrieve paginated leave requests (filterable by student, teacher, class, section, status, date range).
+  * `GET  /api/v1/leaves/:id`: Get detailed leave request with reviewer notes.
+  * `PATCH /api/v1/leaves/:id/review`: Admin or Class Teacher approve/reject leave request. When approved for a Student, automatically links to existing or future `AttendanceEntry` records with status `APPROVED_LEAVE` or `MEDICAL_LEAVE` (`attendanceSource: "LEAVE"`).
+  * `PATCH /api/v1/leaves/:id/cancel`: Applicant cancels pending leave application.
+  * `PATCH /api/v1/leaves/:id/archive`: Soft-archive leave request (`status: "ARCHIVED"`).
+* **Attendance Lock Rules (`/api/v1/attendance/lock-rules`)**:
+  * `GET  /api/v1/attendance/lock-rules`: Retrieve active attendance lock rule configuration for an academic session.
+  * `PUT  /api/v1/attendance/lock-rules`: Create or update auto-lock rules (`lockAfterHours`, `lockAfterTimeOfDay`, admin override settings).
+* **Attendance Analytics (`/api/v1/attendance/analytics`)**:
+  * `GET  /api/v1/attendance/analytics/summary`: Retrieve aggregate attendance percentage statistics for students, classes, sections, and teachers across monthly or academic session scopes. Employs a materialized summary aggregation cache (`(academicSessionId, studentId, month, year)`) for scalable reporting.
 
 ### 5.8. Homework & Study Material (`/api/v1/homework`, `/api/v1/materials`)
 * `GET  /api/v1/homework`: List homework assignments (scoped to teacher assignments, student class, or parent children).

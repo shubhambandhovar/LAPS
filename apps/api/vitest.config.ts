@@ -7,6 +7,9 @@ export default defineConfig({
     fileParallelism: false,
     env: {
       MONGOMS_DOWNLOAD_DIR: 's:/B.TECH CSE/Project 2/LAPS/.cache/mongodb',
+      TMPDIR: 's:/B.TECH CSE/Project 2/LAPS/.cache/tmp',
+      TEMP: 's:/B.TECH CSE/Project 2/LAPS/.cache/tmp',
+      TMP: 's:/B.TECH CSE/Project 2/LAPS/.cache/tmp',
     },
     include: ['src/__tests__/**/*.test.ts'],
     coverage: {

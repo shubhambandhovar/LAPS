@@ -40,7 +40,7 @@ async function updateExamAnalyticsCache(
   let totalPassed = 0;
   let totalFailed = 0;
   let totalCompartment = 0;
-  let totalAbsent = 0;
+  const totalAbsent = 0;
   let sumPercentage = 0;
   let sumMarks = 0;
   let highestMarks = 0;

@@ -1166,28 +1166,151 @@ Materialized pre-aggregated examination analytics cache keyed by session, exam, 
 
 ---
 
-### 3.9. Report Cards & Academic Transcripts Collections (Phase 9)
+### 3.9. Report Cards, Academic Transcripts & Promotion Collections (Phase 9)
 
 #### 42. `ReportCard`
-Compiled end-of-term printable student report card.
+Compiled end-of-term printable student report card with full revision history and attendance integration.
+* **Fields**:
+  * `_id`: ObjectId
+  * `reportCardNumber`: String (Unique, e.g., `"RC-2026-T1-001"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Indexed)
+  * `examId`: ObjectId -> `Exam` (Indexed)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
+  * `studentId`: ObjectId -> `Student` (Indexed)
+  * `classId`: ObjectId -> `Class` (Indexed)
+  * `sectionId`: ObjectId -> `Section` (Indexed)
+  * `templateId`: ObjectId -> `ReportCardTemplate`
+  * `subjectResults`: Array<{
+      `classSubjectId`: ObjectId,
+      `subjectName`: String,
+      `theoryMarks`: Number,
+      `practicalMarks`: Number,
+      `internalMarks`: Number,
+      `totalMarks`: Number,
+      `maximumMarks`: Number,
+      `percentage`: Number,
+      `grade`: String,
+      `gradePoint`: Number,
+      `remarks`: String
+    }>
+  * `attendanceSummary`: {
+      `workingDays`: Number,
+      `presentDays`: Number,
+      `absentDays`: Number,
+      `leaveDays`: Number,
+      `lateDays`: Number,
+      `attendancePercentage`: Number
+    }
+  * `meritRanking`: {
+      `rankInClass`: Number,
+      `rankInSection`: Number,
+      `overallPercentage`: Number,
+      `gpa`: Number
+    }
+  * `remarks`: {
+      `classTeacherRemarks`: String,
+      `principalRemarks`: String,
+      `autoRemarks`: String
+    }
+  * `promotionDecisionId`: ObjectId -> `PromotionDecision` (Optional)
+  * `versionNumber`: Number (Default `1`)
+  * `versionHistory`: Array<{
+      `versionNumber`: Number,
+      `generatedAt`: Date,
+      `generatedBy`: ObjectId,
+      `changeReason`: String,
+      `pdfUrl`: String
+    }>
+  * `pdfUrl`: String
+  * `status`: Enum (`"DRAFT" | "PUBLISHED" | "ARCHIVED"`)
+  * `publishedAt`: Date
+  * `publishedBy`: ObjectId -> `User`
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+* **Indexes**:
+  * `{ examId: 1, enrollmentId: 1 }` (Unique)
+  * `{ reportCardNumber: 1 }` (Unique)
+  * `{ academicSessionId: 1, classId: 1, sectionId: 1, status: 1 }`
+  * `{ studentId: 1, status: 1 }`
+
+#### 43. `ReportCardTemplate`
+Customizable layout, branding, and signature configuration for printable report cards.
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String (e.g., `"Standard High School Term Report Template"`)
+  * `description`: String
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
+  * `classIds`: Array<ObjectId -> `Class`> (Optional scoping)
+  * `isDefault`: Boolean (Default `false`)
+  * `branding`: {
+      `schoolLogoUrl`: String,
+      `headerText`: String,
+      `footerText`: String,
+      `watermarkText`: String,
+      `customCss`: String
+    }
+  * `signatures`: {
+      `showPrincipalSignature`: Boolean,
+      `principalSignatureUrl`: String,
+      `principalTitle`: String,
+      `showClassTeacherSignature`: Boolean,
+      `classTeacherTitle`: String
+    }
+  * `layout`: {
+      `showGradingScale`: Boolean,
+      `showMarksBreakdown`: Boolean,
+      `showAttendance`: Boolean,
+      `showRemarks`: Boolean,
+      `showPromotionSection`: Boolean,
+      `showClassRank`: Boolean,
+      `showSectionRank`: Boolean
+    }
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+* **Indexes**:
+  * `{ name: 1, academicSessionId: 1 }` (Unique)
+  * `{ academicSessionId: 1, isDefault: 1 }`
+
+#### 44. `ReportCardVersion`
+Audit snapshot of a previously generated report card version.
+* **Fields**:
+  * `_id`: ObjectId
+  * `reportCardId`: ObjectId -> `ReportCard` (Indexed)
+  * `versionNumber`: Number
+  * `generatedAt`: Date
+  * `generatedBy`: ObjectId -> `User`
+  * `changeReason`: String
+  * `snapshotData`: Object
+  * `pdfUrl`: String
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+* **Indexes**:
+  * `{ reportCardId: 1, versionNumber: 1 }` (Unique)
+
+#### 45. `PromotionDecision`
+End-of-term or end-of-year student promotion determination.
 * **Fields**:
   * `_id`: ObjectId
   * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
-  * `examId`: ObjectId -> `Exam` (Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Indexed)
   * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
-  * `studentId`: ObjectId -> `Student`
-  * `totalMarksObtained`: Number
-  * `totalMaxMarks`: Number
-  * `percentage`: Number
-  * `overallGrade`: String
-  * `classRank`: Number
-  * `attendancePercentage`: Number
-  * `classTeacherRemarks`: String
-  * `principalRemarks`: String
-  * `status`: Enum (`"DRAFT" | "APPROVED" | "PUBLISHED"`)
-  * `pdfReportUrl`: String
+  * `studentId`: ObjectId -> `Student` (Indexed)
+  * `fromClassId`: ObjectId -> `Class`
+  * `fromSectionId`: ObjectId -> `Section`
+  * `toClassId`: ObjectId -> `Class` (Optional when DETAINED or COMPLETED)
+  * `toSectionId`: ObjectId -> `Section` (Optional)
+  * `promotionStatus`: Enum (`"PROMOTED" | "PROMOTED_CONDITIONALLY" | "DETAINED" | "COMPLETED" | "TC_ELIGIBLE"`)
+  * `remarks`: String
+  * `decidedBy`: ObjectId -> `User`
+  * `decidedAt`: Date
+  * `status`: Enum (`"DRAFT" | "APPROVED" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
 * **Indexes**:
-  * `{ examId: 1, enrollmentId: 1 }` (Unique)
+  * `{ academicSessionId: 1, enrollmentId: 1 }` (Unique)
+  * `{ fromClassId: 1, fromSectionId: 1, status: 1 }`
 
 ---
 

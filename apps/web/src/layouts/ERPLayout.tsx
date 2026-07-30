@@ -159,6 +159,58 @@ export const ERPLayout: React.FC = () => {
             <Calendar className="w-4 h-4 text-indigo-400" />
             <span>Academic Calendar</span>
           </Link>
+
+          <div className="pt-3 pb-1 px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Exams & Report Cards
+          </div>
+
+          <Link
+            to="/portal/exams/dashboard"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <Award className="w-4 h-4 text-indigo-400" />
+            <span>Examinations</span>
+          </Link>
+
+          <Link
+            to="/portal/report-cards/dashboard"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-400" />
+            <span>Report Cards</span>
+          </Link>
+
+          <Link
+            to="/portal/report-cards/templates"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+            <span>Template Builder</span>
+          </Link>
+
+          <Link
+            to="/portal/report-cards/generate"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <Award className="w-4 h-4 text-indigo-400" />
+            <span>Generate & Publish</span>
+          </Link>
+
+          <Link
+            to="/portal/report-cards/promotions"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-400" />
+            <span>Promotion Decisions</span>
+          </Link>
+
+          <Link
+            to="/portal/report-cards/my-report-cards"
+            className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white font-medium text-sm transition-colors"
+          >
+            <School className="w-4 h-4 text-indigo-400" />
+            <span>My Report Cards</span>
+          </Link>
         </nav>
 
         {user && (

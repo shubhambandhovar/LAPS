@@ -340,10 +340,32 @@ Standard collection endpoints accept uniform URL query parameters:
   * `PATCH  /api/v1/re-evaluations/:id/complete`: Assigned teacher re-evaluates, updates marks, and records immutable audit trail (`status: "COMPLETED"`).
   * `PATCH  /api/v1/re-evaluations/:id/archive`: Soft-archive request.
 
-### 5.10. Report Cards & Academic Transcripts (`/api/v1/report-cards` — Phase 9)
-* `GET  /api/v1/report-cards`: List compiled report cards for an academic session/term.
-* `POST /api/v1/report-cards/compile`: Trigger automated end-of-term report card compilation.
-* `GET  /api/v1/report-cards/:id/pdf`: Retrieve PDF download link for printable report card.
+### 5.10. Report Cards, Academic Transcripts & Promotion Management (`/api/v1/report-cards`, `/api/v1/report-card-templates`, `/api/v1/promotions` — Phase 9)
+
+#### A. Report Cards (`/api/v1/report-cards`)
+* `GET    /api/v1/report-cards`: List compiled report cards (filterable by `academicSessionId`, `academicTermId`, `examId`, `classId`, `sectionId`, `enrollmentId`, `studentId`, `status`).
+* `GET    /api/v1/report-cards/my`: Retrieve published report cards for logged-in Student or Guardian (`status: "PUBLISHED"`).
+* `GET    /api/v1/report-cards/:id`: Retrieve detailed report card including active `versionHistory` and attendance summary.
+* `POST   /api/v1/report-cards/generate`: Trigger automated report card generation or re-generation for an exam/class/enrollment (creates `ReportCardVersion` snapshot on re-generation).
+* `PATCH  /api/v1/report-cards/publish`: Bulk publish generated report cards (`status: "PUBLISHED"`).
+* `GET    /api/v1/report-cards/:id/download`: Retrieve printable PDF report card URL and binary payload.
+* `PATCH  /api/v1/report-cards/:id/remarks`: Update class teacher or principal remarks on a draft report card.
+* `PATCH  /api/v1/report-cards/:id/archive`: Soft-archive a report card (`status: "ARCHIVED"`).
+
+#### B. Report Card Templates (`/api/v1/report-card-templates`)
+* `GET    /api/v1/report-card-templates`: List configured report card templates.
+* `GET    /api/v1/report-card-templates/:id`: Retrieve specific template configuration.
+* `POST   /api/v1/report-card-templates`: Create new report card template with custom branding, signature rules, and layout options.
+* `PUT    /api/v1/report-card-templates/:id`: Update existing template configuration.
+* `PATCH  /api/v1/report-card-templates/:id/default`: Set a template as default for an academic session or class.
+* `PATCH  /api/v1/report-card-templates/:id/archive`: Soft-archive template (`status: "ARCHIVED"`).
+
+#### C. Promotion Decisions (`/api/v1/promotions`)
+* `GET    /api/v1/promotions`: List student promotion decisions (filterable by `academicSessionId`, `fromClassId`, `fromSectionId`, `status`).
+* `POST   /api/v1/promotions/evaluate`: Bulk evaluate promotion eligibility based on term results and attendance thresholds.
+* `POST   /api/v1/promotions`: Create or update an individual student promotion decision (`PROMOTED`, `PROMOTED_CONDITIONALLY`, `DETAINED`, `COMPLETED`, `TC_ELIGIBLE`).
+* `PATCH  /api/v1/promotions/approve`: Bulk approve draft promotion decisions (`status: "APPROVED"`).
+* `PATCH  /api/v1/promotions/:id/archive`: Soft-archive promotion decision (`status: "ARCHIVED"`).
 
 ### 5.11. Fee Management & Accounting (`/api/v1/fees`)
 * `GET  /api/v1/fees/structures`: List configured fee structures per class/session.

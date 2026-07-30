@@ -32,6 +32,9 @@ import marksRoutes from './marks.routes';
 import gradeScaleRoutes from './gradeScale.routes';
 import resultRoutes from './result.routes';
 import reEvaluationRoutes from './reEvaluation.routes';
+import reportCardTemplateRoutes from './reportCardTemplate.routes';
+import reportCardRoutes from './reportCard.routes';
+import promotionRoutes from './promotion.routes';
 
 const router = Router();
 
@@ -84,6 +87,11 @@ router.use('/marks', marksRoutes);
 router.use('/grade-scales', gradeScaleRoutes);
 router.use('/results', resultRoutes);
 router.use('/re-evaluations', reEvaluationRoutes);
+
+// Phase 9: Mount Report Cards, Academic Transcripts & Promotion Management endpoints
+router.use('/report-card-templates', reportCardTemplateRoutes);
+router.use('/report-cards', reportCardRoutes);
+router.use('/promotions', promotionRoutes);
 
 export default router;
 

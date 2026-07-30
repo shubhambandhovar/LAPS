@@ -76,3 +76,4 @@ export * from './types/attendance';
 export * from './schemas/attendance.schema';
 export * from './schemas/homework.schema';
 export * from './schemas/exam.schema';
+export * from './schemas/reportCard.schema';

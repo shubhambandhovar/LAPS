@@ -274,3 +274,34 @@ The Curriculum, Timetable, and Academic Calendar test suite guarantees database 
     * Admin queries `GET /api/v1/results/analytics/summary` -> Asserts subject averages, pass percentage, grade distribution, and top performers are returned from `ExamAnalyticsSummary` materialized cache.
 18. **Soft-Archive Examination Entities (`TEST-EXAM-018`)**:
     * Soft-archive an `Exam`, `ExamSchedule`, `MarksEntry`, `GradeScale`, and `Result` (`PATCH /:id/archive`) -> Asserts status transitions to `ARCHIVED` and entities are excluded from active list queries.
+
+### 3.11. Report Cards, Academic Transcripts & Promotion Verification Suite (`TEST-RC-001` through `TEST-RC-014` — Phase 9)
+In Phase 9, automated verification in `apps/api/src/__tests__/reportCard.test.ts` executes the following 14-test verification suite:
+1. **Create Report Card Template (`TEST-RC-001`)**:
+   * Admin creates a `ReportCardTemplate` (`POST /api/v1/report-card-templates`) with custom branding, signature blocks, and layout toggle flags -> Asserts successful creation (`status: "ACTIVE"`).
+2. **Template Validation (`TEST-RC-002`)**:
+   * Admin attempts to create a template with missing required fields or duplicate name -> Asserts `400 BAD REQUEST` or `409 CONFLICT`.
+3. **Generate Student Report Card (`TEST-RC-003`)**:
+   * Admin triggers `POST /api/v1/report-cards/generate` for an exam and enrollment -> Asserts `ReportCard` is created in `DRAFT` status without duplicating underlying marks or attendance records.
+4. **Report Card Data Accuracy (`TEST-RC-004`)**:
+   * Inspect generated `ReportCard` -> Asserts `subjectResults`, `percentage`, `overallGrade`, `meritRanking.rankInClass`, and `attendanceSummary` exactly match the underlying `Result` and `Attendance` records.
+5. **Report Card Versioning (`TEST-RC-005`)**:
+   * Admin re-generates a report card after a mark revision -> Asserts `versionNumber` increments to `2` and an immutable audit snapshot is recorded in `ReportCardVersion` (`TEST-RC-005`).
+6. **Teacher & Principal Remarks (`TEST-RC-006`)**:
+   * Teacher enters class teacher remarks (`PATCH /api/v1/report-cards/:id/remarks`) -> Asserts remarks are persisted on the draft report card.
+7. **Bulk Publish Report Cards (`TEST-RC-007`)**:
+   * Admin executes `PATCH /api/v1/report-cards/publish` -> Asserts all targeted report cards transition to `status: "PUBLISHED"`.
+8. **Student Report Card Retrieval (`TEST-RC-008`)**:
+   * Student queries `GET /api/v1/report-cards/my` -> Asserts only published report cards belonging to their own enrollment are returned.
+9. **Student RBAC Isolation (`TEST-RC-009`)**:
+   * Student attempts to query another student's report card or a draft report card -> Asserts `403 FORBIDDEN` or `404 NOT FOUND`.
+10. **Evaluate Promotion Decisions (`TEST-RC-010`)**:
+    * Admin triggers `POST /api/v1/promotions/evaluate` -> Asserts `PromotionDecision` records are generated recommending `PROMOTED`, `PROMOTED_CONDITIONALLY`, or `DETAINED` based on term percentage and attendance.
+11. **Approve Promotion Decisions (`TEST-RC-011`)**:
+    * Admin executes `PATCH /api/v1/promotions/approve` -> Asserts promotion decisions transition to `status: "APPROVED"`.
+12. **Teacher Class Scoping (`TEST-RC-012`)**:
+    * Teacher attempts to query report cards or promotion decisions for an unassigned class -> Asserts `403 FORBIDDEN`.
+13. **Download Printable PDF (`TEST-RC-013`)**:
+    * Student requests `GET /api/v1/report-cards/:id/download` -> Asserts valid PDF download URL and payload metadata are returned.
+14. **Soft-Archive Report Card & Template (`TEST-RC-014`)**:
+    * Admin soft-archives a report card and template (`PATCH /:id/archive`) -> Asserts `status: "ARCHIVED"` and exclusion from active queries.

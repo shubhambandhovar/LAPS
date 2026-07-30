@@ -51,6 +51,13 @@ import {
   StudentResultPage,
   ReEvaluationPage,
 } from '../modules/exams';
+import {
+  ReportCardDashboardPage,
+  TemplateBuilderPage,
+  GeneratePublishPage,
+  PromotionManagementPage,
+  MyReportCardsPage,
+} from '../modules/report-cards';
 
 const router = createBrowserRouter([
   {
@@ -205,6 +212,27 @@ const router = createBrowserRouter([
       {
         path: 'exams/re-evaluations',
         element: <ReEvaluationPage />,
+      },
+      // Phase 9: Report Cards, Academic Transcripts & Promotion Management
+      {
+        path: 'report-cards/dashboard',
+        element: <ReportCardDashboardPage />,
+      },
+      {
+        path: 'report-cards/templates',
+        element: <TemplateBuilderPage />,
+      },
+      {
+        path: 'report-cards/generate',
+        element: <GeneratePublishPage />,
+      },
+      {
+        path: 'report-cards/promotions',
+        element: <PromotionManagementPage />,
+      },
+      {
+        path: 'report-cards/my-report-cards',
+        element: <MyReportCardsPage />,
       },
     ],
   },

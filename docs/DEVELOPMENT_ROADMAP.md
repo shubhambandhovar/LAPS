@@ -123,11 +123,19 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 ---
 
 ### Phase 9 — Report Cards, Academic Transcripts & Promotion Management
-* **Objective**: Automate end-of-term grade calculation, class ranking, printable PDF report card generation (`ReportCard`), and promotion readiness.
+* **Objective**: Automate end-of-term printable report card generation (`ReportCard`), customizable report card branding and signatures (`ReportCardTemplate`), audit version history on re-generation (`ReportCardVersion`), and end-of-term student promotion decisions (`PromotionDecision`).
 * **Dependencies**: Phase 8.
-* **Deliverables**: `ReportCard` model and compilation engine; PDF report generator (Puppeteer / PDFKit); Report card viewer UI.
-* **Acceptance Criteria**: Executing result compilation accurately maps percentage to `GradeScale` letter; parent can download clean PDF report card.
-* **Tests Required**: Result compilation workflow test (`TEST-FLOW-EXAM`); grade rule threshold unit tests.
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod schemas and TypeScript types for `ReportCard`, `ReportCardTemplate`, `ReportCardVersion`, and `PromotionDecision`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#42` to `#45`; REST endpoints under `/api/v1/report-cards`, `/api/v1/report-card-templates`, and `/api/v1/promotions`; RBAC scoping for Teachers (`REPORT_CARD_PROMOTION_SCOPE`), Students/Guardians, and Admins.
+  * **ERP Web UI (`apps/web`)**: Report Card Dashboard (`/erp/report-cards/dashboard`), Report Card Template Builder (`/erp/report-cards/templates`), Generate & Publish Report Cards (`/erp/report-cards/generate`), Promotion Management (`/erp/promotions`), Student Report Card View (`/erp/report-cards/my-reports`), and PDF preview modal.
+* **Acceptance Criteria**:
+  * Report Cards strictly depend on `AcademicSession -> AcademicTerm -> Enrollment -> Exam -> Assessment Components -> Marks -> Grade Scale -> Attendance Summary` without duplicating marks or attendance records.
+  * Custom branding (logo, headers, footers) and signatures (Principal, Class Teacher) configure dynamically via `ReportCardTemplate`.
+  * Re-generating a report card increments `versionNumber` and stores an immutable audit snapshot in `ReportCardVersion`.
+  * Promotion recommendation engine evaluates pass/fail status and attendance percentage to recommend `PROMOTED`, `PROMOTED_CONDITIONALLY`, or `DETAINED`.
+  * Students and Guardians can access only their own published report cards (`GET /api/v1/report-cards/my`).
+* **Tests Required**: Verification suite `TEST-RC-001` to `TEST-RC-014` covering template creation, validation, draft generation, data accuracy, versioning, remarks, bulk publication, student retrieval, RBAC isolation, promotion evaluation, promotion approval, teacher class scoping, PDF download, and archiving.
 
 ---
 

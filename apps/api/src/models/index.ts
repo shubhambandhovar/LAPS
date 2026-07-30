@@ -36,7 +36,10 @@ export * from './AssessmentComponent';
 export * from './MarksEntry';
 export * from './GradeScale';
 export * from './Result';
-export * from './ReEvaluationRequest';
 export * from './ExamAnalyticsSummary';
+export * from './ReportCard';
+export * from './ReportCardTemplate';
+export * from './ReportCardVersion';
+export * from './PromotionDecision';
 
 

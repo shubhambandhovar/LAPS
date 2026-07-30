@@ -123,6 +123,17 @@ When a Teacher, Student, Guardian, or Admin interacts with examinations, exam sc
 3. **Admin Unrestricted Access & Calculation Authority**:
    * `SUPER_ADMIN` and `SCHOOL_ADMIN` possess institutional override to create examinations, configure schedules with real-time conflict detection, trigger automated result processing (`POST /api/v1/results/calculate`), lock marks, publish results, apply grace marks rules, and manage re-evaluation workflows across all classes and teachers.
 
+### 3.8. Report Cards, Academic Transcripts & Promotion Scoping (`REPORT_CARD_PROMOTION_SCOPE` — Phase 9)
+When a Teacher, Student, Guardian, or Admin interacts with report cards, templates, report card generation, versioning, or promotion decisions:
+1. **Teacher Report Card & Promotion Access Scope**:
+   * A Teacher can view generated report cards (`GET /api/v1/report-cards`) and enter class teacher remarks (`PATCH /api/v1/report-cards/:id/remarks`) ONLY for classes and sections where they are assigned (`TeachingAssignment`).
+   * A Teacher can view student promotion recommendations (`GET /api/v1/promotions`) for their assigned classes. They cannot approve promotion decisions or publish report cards (`403 RBAC_PERMISSION_DENIED`).
+2. **Student & Guardian Report Card Access Scope**:
+   * A Student or Guardian can view and download report cards (`GET /api/v1/report-cards/my`, `GET /api/v1/report-cards/:id/download`) ONLY for their own active `Enrollment` (or ward's enrollment) AND ONLY after the report card status transitions to `"PUBLISHED"` (`status === "PUBLISHED"`).
+   * Attempting to query draft report cards or another student's report cards returns `403 RBAC_PERMISSION_DENIED`.
+3. **Admin Unrestricted Access & Generation Authority**:
+   * `SUPER_ADMIN` and `SCHOOL_ADMIN` possess institutional authority to configure report card templates (`POST /api/v1/report-card-templates`), trigger automated report card generation (`POST /api/v1/report-cards/generate`), publish report cards in bulk (`PATCH /api/v1/report-cards/publish`), enter principal remarks, and evaluate/approve promotion decisions (`POST /api/v1/promotions/evaluate`, `PATCH /api/v1/promotions/approve`).
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

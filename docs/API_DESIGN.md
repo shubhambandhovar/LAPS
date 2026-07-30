@@ -367,13 +367,71 @@ Standard collection endpoints accept uniform URL query parameters:
 * `PATCH  /api/v1/promotions/approve`: Bulk approve draft promotion decisions (`status: "APPROVED"`).
 * `PATCH  /api/v1/promotions/:id/archive`: Soft-archive promotion decision (`status: "ARCHIVED"`).
 
-### 5.11. Fee Management & Accounting (`/api/v1/fees`)
-* `GET  /api/v1/fees/structures`: List configured fee structures per class/session.
-* `POST /api/v1/fees/structures`: Create fee structure item.
-* `GET  /api/v1/fees/student/:studentId`: Retrieve student fee dues, discounts, and payment history.
-* `POST /api/v1/fees/payments`: Record offline fee payment transaction (Cash, Cheque, DD, Bank Transfer).
-* `GET  /api/v1/fees/receipts/:receiptNumber`: Download/view official fee receipt PDF.
-* `GET  /api/v1/fees/defaulters`: Admin report of students with overdue pending fee balances.
+### 5.11. Fee Management & Finance (`/api/v1/fee-heads`, `/api/v1/fee-structures`, `/api/v1/discounts`, `/api/v1/late-fee-rules`, `/api/v1/invoices`, `/api/v1/payments`, `/api/v1/receipts`, `/api/v1/student-ledger`, `/api/v1/fee-reports` — Phase 10)
+
+#### A. Fee Heads (`/api/v1/fee-heads`)
+* `GET    /api/v1/fee-heads`: List all fee heads (filterable by `category`, `frequency`, `status`).
+* `GET    /api/v1/fee-heads/:id`: Retrieve specific fee head details.
+* `POST   /api/v1/fee-heads`: Create a new fee head (Admission Fee, Tuition Fee, Examination Fee, Library Fee, Laboratory Fee, Sports Fee, Development Fee, Custom Fee Heads).
+* `PUT    /api/v1/fee-heads/:id`: Update fee head details.
+* `PATCH  /api/v1/fee-heads/:id/archive`: Soft-archive a fee head (`status: "ARCHIVED"`).
+
+#### B. Fee Structures (`/api/v1/fee-structures`)
+* `GET    /api/v1/fee-structures`: List fee structures (filterable by `academicSessionId`, `classId`, `status`).
+* `GET    /api/v1/fee-structures/:id`: Retrieve specific fee structure including components and installment breakdown.
+* `POST   /api/v1/fee-structures`: Create a new fee structure for an academic session and class.
+* `PUT    /api/v1/fee-structures/:id`: Update existing fee structure.
+* `PATCH  /api/v1/fee-structures/:id/status`: Update status (`DRAFT`, `ACTIVE`, `ARCHIVED`).
+* `PATCH  /api/v1/fee-structures/:id/archive`: Soft-archive fee structure (`status: "ARCHIVED"`).
+
+#### C. Discounts & Scholarships (`/api/v1/discounts`)
+* `GET    /api/v1/discounts`: List configured discounts and scholarships (filterable by `category`, `discountType`, `status`).
+* `GET    /api/v1/discounts/:id`: Retrieve specific discount/scholarship configuration.
+* `POST   /api/v1/discounts`: Create discount or scholarship rule (Fixed Amount, Percentage, Need Based, Merit Based).
+* `PUT    /api/v1/discounts/:id`: Update discount/scholarship rule.
+* `POST   /api/v1/discounts/:id/apply`: Apply discount or scholarship to a student enrollment (triggers approval workflow if required).
+* `PATCH  /api/v1/discounts/applications/:applicationId/approve`: Approve pending discount/scholarship application.
+* `PATCH  /api/v1/discounts/:id/archive`: Soft-archive discount rule (`status: "ARCHIVED"`).
+
+#### D. Late Fee Rules (`/api/v1/late-fee-rules`)
+* `GET    /api/v1/late-fee-rules`: List late fee calculation rules (`FIXED`, `PERCENTAGE`, `PER_DAY`, grace period).
+* `POST   /api/v1/late-fee-rules`: Create new late fee rule.
+* `PUT    /api/v1/late-fee-rules/:id`: Update existing late fee rule.
+* `PATCH  /api/v1/late-fee-rules/:id/archive`: Soft-archive late fee rule (`status: "ARCHIVED"`).
+
+#### E. Student Invoices (`/api/v1/invoices`)
+* `GET    /api/v1/invoices`: List student fee invoices (filterable by `academicSessionId`, `financialYearId`, `classId`, `enrollmentId`, `studentId`, `status`, `dueDate`).
+* `GET    /api/v1/invoices/my`: Retrieve invoices for logged-in Student or Guardian.
+* `GET    /api/v1/invoices/:id`: Retrieve detailed invoice including immutable line item snapshots (`feeHeadName`, `feeHeadCode`, `baseAmount`, `discountAmount`, `discountName`, `netAmount`), discounts, late fee, paid amount, and outstanding amount across the 8-state lifecycle (`DRAFT -> GENERATED -> ISSUED -> PARTIALLY_PAID -> PAID -> OVERDUE -> WAIVED -> CANCELLED`).
+* `POST   /api/v1/invoices/generate`: Batch generate fee invoices for an academic session, class, and installment/term.
+* `POST   /api/v1/invoices`: Create an individual or custom ad-hoc invoice for a student enrollment.
+* `PATCH  /api/v1/invoices/:id/waive`: Apply a full or partial waiver to an invoice (requires mandatory `auditReason` and `approvedBy` in request payload).
+* `PATCH  /api/v1/invoices/:id/cancel`: Cancel an invoice (`status: "CANCELLED"`, requires mandatory `auditReason` and `approvedBy` in request payload).
+
+#### F. Payments & Receipts (`/api/v1/payments`, `/api/v1/receipts`)
+* `GET    /api/v1/payments`: List fee payment transactions (filterable by `academicSessionId`, `financialYearId`, `studentId`, `paymentMode`, `status`, `fromDate`, `toDate`).
+* `POST   /api/v1/payments`: Record a fee payment transaction (Cash, UPI, Card, Bank Transfer, Cheque, Online Gateway placeholder) supporting partial payments and allocation across multiple invoices (`status: "ACTIVE"`).
+* `GET    /api/v1/payments/:id`: Retrieve specific payment transaction details and allocations.
+* `POST   /api/v1/payments/:id/refund`: Initiate a full or partial refund for a completed payment transaction (requires mandatory `auditReason` and `approvedBy` in request payload).
+* `POST   /api/v1/payments/:id/reverse`: Reverse a payment transaction (`status: "REVERSED"` instead of deleting payment records, requires mandatory `auditReason` and `approvedBy` in request payload).
+* `GET    /api/v1/receipts`: List generated payment receipts.
+* `GET    /api/v1/receipts/:receiptNumber/download`: Download printable PDF receipt for a payment transaction.
+* `GET    /api/v1/receipts/:receiptNumber/verify`: Verify digital receipt authenticity via cryptographic `verificationHash` and QR code URL lookup (planning only).
+* `GET    /api/v1/receipts/:receiptNumber/versions`: Retrieve immutable historical receipt versions (`ReceiptVersion`) to view receipt correction audit history.
+
+#### G. Student Fee Ledger (`/api/v1/student-ledger`)
+* `GET    /api/v1/student-ledger`: List student account balances across enrollments (filterable by `academicSessionId`, `financialYearId`, `classId`, `outstandingBalance`).
+* `GET    /api/v1/student-ledger/my`: Retrieve ledger summary and transactions for logged-in Student or Guardian.
+* `GET    /api/v1/student-ledger/:enrollmentId`: Retrieve complete chronological fee ledger for a student enrollment (invoices, payments, waivers, adjustments, refunds, advance balance, outstanding balance).
+
+#### H. Financial Reports (`/api/v1/fee-reports`)
+* `GET    /api/v1/fee-reports/summary`: Retrieve executive financial dashboard metrics from materialized `FinancialSummary` cache instead of calculating on every request.
+* `GET    /api/v1/fee-reports/daily-collection`: Retrieve daily collection summary report grouped by payment mode and fee head.
+* `GET    /api/v1/fee-reports/monthly-collection`: Retrieve monthly collection analytics report.
+* `GET    /api/v1/fee-reports/outstanding`: Retrieve defaulters and outstanding fee report by class and section.
+* `GET    /api/v1/fee-reports/class-summary`: Retrieve class-wise fee collection and due summary.
+* `GET    /api/v1/fee-reports/student-statement/:enrollmentId`: Generate printable comprehensive financial statement for an individual student.
+
 
 ### 5.12. Communication & Public CMS (`/api/v1/communication`, `/api/v1/cms`)
 * `GET  /api/v1/communication/notices`: List circulars and notices scoped to user audience.

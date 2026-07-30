@@ -136,6 +136,32 @@ When a Teacher, Student, Guardian, or Admin interacts with report cards, templat
 
 ---
 
+### 3.9. Fee Management & Finance Scoping (`FEE_FINANCE_SCOPE` — Phase 10)
+
+Fee Management and financial accounting operations enforce strict institutional accounting controls and financial data privacy:
+
+| Role | Fee Heads & Structures | Discounts & Scholarships | Late Fee Rules | Invoices | Payments & Receipts | Student Fee Ledger | Financial Reports |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`SUPER_ADMIN`** | FULL CRUD | FULL CRUD & APPROVE | FULL CRUD | GENERATE / CRUD / WAIVE / CANCEL | RECORD / REFUND | FULL VIEW | ALL REPORTS |
+| **`SCHOOL_ADMIN`** | FULL CRUD | FULL CRUD & APPROVE | FULL CRUD | GENERATE / CRUD / WAIVE / CANCEL | RECORD / REFUND | FULL VIEW | ALL REPORTS |
+| **`ACCOUNTANT`** | FULL CRUD | APPLY / VIEW | FULL CRUD | GENERATE / CRUD / WAIVE | RECORD / REFUND | FULL VIEW | ALL REPORTS |
+| **`TEACHER`** | VIEW (Optional) | NO ACCESS | VIEW (Optional) | VIEW (Assigned Class Optional) | NO ACCESS | VIEW (Assigned Class Optional) | NO ACCESS |
+| **`STUDENT`** | NO ACCESS | VIEW (Own Applied) | VIEW | VIEW (Own Only) | VIEW (Own Receipts) | VIEW (Own Ledger) | NO ACCESS |
+| **`GUARDIAN`** | NO ACCESS | VIEW (Ward Applied) | VIEW | VIEW (Ward Only) | VIEW (Ward Receipts) | VIEW (Ward Ledger) | NO ACCESS |
+
+#### Architectural Scoping Rules for Fee Management:
+1. **Accountant & Admin Authority**:
+   - `SUPER_ADMIN`, `SCHOOL_ADMIN`, and `ACCOUNTANT` roles possess authority to configure fee heads (`POST /api/v1/fee-heads`), define fee structures (`POST /api/v1/fee-structures`), generate invoices across the 8-state lifecycle (`POST /api/v1/invoices/generate`), record payments (`POST /api/v1/payments`), and access all financial reports including the materialized `FinancialSummary` (`/api/v1/fee-reports/*`).
+   - Sibling concessions, need-based scholarships, payment refunds/reversals (`POST /api/v1/payments/:id/reverse`), invoice waivers, and invoice cancellations require mandatory `auditReason` and `approvedBy` metadata from an authorized `SUPER_ADMIN` or `SCHOOL_ADMIN`.
+   - All receipt corrections generate an immutable `ReceiptVersion` snapshot to preserve audit history.
+2. **Teacher Read-Only Visibility**:
+   - By default, teachers do not manage fees. If enabled by school policy, teachers can view basic fee due/defaulter status for their assigned classes to assist in administrative communication, but cannot generate invoices, record payments, or modify ledgers (`403 RBAC_PERMISSION_DENIED`).
+3. **Student & Guardian Self-Service Ledger Scoping**:
+   - `STUDENT` and `GUARDIAN` users can view ONLY their own (or ward's) active `Enrollment` fee ledger (`GET /api/v1/student-ledger/my`), fee invoices (`GET /api/v1/invoices/my`), and printable payment receipts (`GET /api/v1/receipts/:id/download`).
+   - Attempting to access another student's fee ledger, invoices, or receipts returns `403 RBAC_PERMISSION_DENIED`.
+
+---
+
 ## 4. Permission Middleware Enforcement Contract
 
 In Express route files, authorization is declared explicitly using middleware factories:

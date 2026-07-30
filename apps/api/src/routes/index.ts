@@ -35,6 +35,16 @@ import reEvaluationRoutes from './reEvaluation.routes';
 import reportCardTemplateRoutes from './reportCardTemplate.routes';
 import reportCardRoutes from './reportCard.routes';
 import promotionRoutes from './promotion.routes';
+import financialYearRoutes from './financialYear.routes';
+import feeHeadRoutes from './feeHead.routes';
+import feeStructureRoutes from './feeStructure.routes';
+import feeDiscountRoutes from './feeDiscount.routes';
+import lateFeeRuleRoutes from './lateFeeRule.routes';
+import invoiceRoutes from './invoice.routes';
+import paymentRoutes from './payment.routes';
+import receiptRoutes from './receipt.routes';
+import studentLedgerRoutes from './studentLedger.routes';
+import feeReportRoutes from './feeReport.routes';
 
 const router = Router();
 
@@ -92,6 +102,18 @@ router.use('/re-evaluations', reEvaluationRoutes);
 router.use('/report-card-templates', reportCardTemplateRoutes);
 router.use('/report-cards', reportCardRoutes);
 router.use('/promotions', promotionRoutes);
+
+// Phase 10: Mount Fee Management & Finance endpoints
+router.use('/financial-years', financialYearRoutes);
+router.use('/fee-heads', feeHeadRoutes);
+router.use('/fee-structures', feeStructureRoutes);
+router.use('/discounts', feeDiscountRoutes);
+router.use('/late-fee-rules', lateFeeRuleRoutes);
+router.use('/invoices', invoiceRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/receipts', receiptRoutes);
+router.use('/student-ledger', studentLedgerRoutes);
+router.use('/fee-reports', feeReportRoutes);
 
 export default router;
 

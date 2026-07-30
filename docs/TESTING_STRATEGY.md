@@ -305,3 +305,36 @@ In Phase 9, automated verification in `apps/api/src/__tests__/reportCard.test.ts
     * Student requests `GET /api/v1/report-cards/:id/download` -> Asserts valid PDF download URL and payload metadata are returned.
 14. **Soft-Archive Report Card & Template (`TEST-RC-014`)**:
     * Admin soft-archives a report card and template (`PATCH /:id/archive`) -> Asserts `status: "ARCHIVED"` and exclusion from active queries.
+
+### 3.12. Fee Management & Finance Verification Suite (`TEST-FEE-001` through `TEST-FEE-015` — Phase 10)
+In Phase 10, automated verification in `apps/api/src/__tests__/fee.test.ts` executes the following 15-test verification suite:
+1. **Create Fee Head (`TEST-FEE-001`)**:
+   * Admin/Accountant creates `FeeHead` (`POST /api/v1/fee-heads`) with category (`TUITION`, `EXAMINATION`, `LIBRARY`, `SPORTS`, `DEVELOPMENT`) and frequency -> Asserts successful creation (`status: "ACTIVE"`).
+2. **Create Fee Structure (`TEST-FEE-002`)**:
+   * Admin creates `FeeStructure` (`POST /api/v1/fee-structures`) for an academic session, optional `financialYearId`, and class with mandatory components, optional fees, installments, and due dates -> Asserts single-school architecture (no `schoolId`), strict academic hierarchy (`AcademicSession` -> `Class`), and correct `totalAmount` calculation.
+3. **Create Discount & Scholarship Rules (`TEST-FEE-003`)**:
+   * Create fixed amount, percentage, merit-based, and sibling discount rules (`POST /api/v1/discounts`) -> Asserts successful validation and persistence.
+4. **Create Late Fee Rules (`TEST-FEE-004`)**:
+   * Create per-day and percentage late fee rules (`POST /api/v1/late-fee-rules`) with grace period days -> Asserts rule configuration is saved.
+5. **Invoice Generation & Line Item Snapshots (`TEST-FEE-005`)**:
+   * Batch generate student invoices (`POST /api/v1/invoices/generate`) for an academic session, class, and installment -> Asserts `Invoice` records are created across the 8-state lifecycle (`DRAFT -> GENERATED -> ISSUED -> PARTIALLY_PAID -> PAID -> OVERDUE -> WAIVED -> CANCELLED`) without duplicating student/enrollment data, and asserts immutable line item snapshots (`feeHeadName`, `feeHeadCode`, `baseAmount`, `discountAmount`, `discountName`, `netAmount`) preserve historical accuracy.
+6. **Discount Application & Approval Workflow (`TEST-FEE-006`)**:
+   * Apply scholarship/discount to an invoice -> Asserts pending approval workflow is triggered where required, and upon approval (`PATCH /api/v1/discounts/applications/:id/approve`), invoice `netTotal` and `outstandingAmount` reduce correctly.
+7. **Record Full Payment & Receipt Generation (`TEST-FEE-007`)**:
+   * Accountant records a full fee payment (`POST /api/v1/payments`) via Cash/UPI/Card/Cheque (`status: "ACTIVE"`) -> Asserts `Payment` transaction is created, official printable `Receipt` is generated with unique `receiptNumber` and reserved verification fields (`verificationHash`, `qrCodeUrl`), invoice `status` transitions to `"PAID"`, and `StudentFeeLedger` is updated.
+8. **Partial Payment Handling (`TEST-FEE-008`)**:
+   * Record a partial payment against an invoice -> Asserts invoice `paidAmount` increments, `outstandingAmount` decreases, and `status` transitions to `"PARTIALLY_PAID"`.
+9. **Multiple Invoice Payment Allocation (`TEST-FEE-009`)**:
+   * Record a single payment transaction covering multiple outstanding installment invoices -> Asserts payment allocations correctly divide across targeted invoices.
+10. **Duplicate Payment Prevention (`TEST-FEE-010`)**:
+    * Attempt to record a payment with a duplicate `paymentTransactionId` or pay an already paid invoice without remaining dues -> Asserts `400 BAD REQUEST` or `409 CONFLICT` error.
+11. **Late Fee Calculation (`TEST-FEE-011`)**:
+    * Verify automatic late fee calculation on an overdue invoice after `dueDate` plus `gracePeriodDays` -> Asserts `lateFeeAmount` is added to `outstandingAmount`.
+12. **Refunds, Payment Reversals & Receipt Versioning (`TEST-FEE-012`)**:
+    * Initiate a refund (`POST /api/v1/payments/:id/refund`) or reversal (`POST /api/v1/payments/:id/reverse`) requiring mandatory `auditReason` and `approvedBy` metadata -> Asserts payment status transitions to `"REFUNDED"` or `"REVERSED"` (no payment record deletion), receipt correction stores an immutable `ReceiptVersion` snapshot, and ledger running balance updates.
+13. **Waivers, Cancellations & Ledger Verification (`TEST-FEE-013`)**:
+    * Execute invoice waiver (`PATCH /api/v1/invoices/:id/waive`) and cancellation (`PATCH /api/v1/invoices/:id/cancel`) requiring mandatory `auditReason` and `approvedBy` metadata -> Asserts invoice status transitions to `"WAIVED"` or `"CANCELLED"`, chronological double-entry `StudentFeeLedger` balances accurately, and materialized `FinancialSummary` cache updates.
+14. **Student & Guardian RBAC Scoping (`TEST-FEE-014`)**:
+    * Logged-in Student or Guardian queries `GET /api/v1/invoices/my` and `GET /api/v1/student-ledger/my` -> Asserts only records belonging to their own enrollment are returned; attempting to query another student returns `403 RBAC_PERMISSION_DENIED`.
+15. **Soft-Archive Fee Entities (`TEST-FEE-015`)**:
+    * Soft-archive a `FeeHead`, `FeeStructure`, `FeeDiscount`, and `LateFeeRule` (`PATCH /:id/archive`) -> Asserts `status: "ARCHIVED"` and exclusion from active queries.

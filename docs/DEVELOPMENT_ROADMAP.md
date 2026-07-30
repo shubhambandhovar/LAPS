@@ -105,7 +105,7 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 8 — Examination, Assessment & Marks Management (IN PROGRESS / DESIGN)
+### Phase 8 — Examination, Assessment & Marks Management (COMPLETED)
 * **Objective**: Build comprehensive examination management (`Exam`), conflict-checked schedule slots (`ExamSchedule`), granular assessment component breakdowns (`AssessmentComponent`), teacher marks entry sheets with strict teacher scoping (`MarksEntry`), configurable grading scales (`GradeScale`), automated result processing with CGPA/GPA and ranking (`Result`), formal re-evaluation workflows (`ReEvaluationRequest`), and materialized analytics summary cache (`ExamAnalyticsSummary`).
 * **Dependencies**: Phase 7 (requires `AcademicSession`, `AcademicTerm`, `ClassSubject`, `TeachingAssignment`, `Enrollment`).
 * **Deliverables**:
@@ -122,7 +122,7 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 9 — Report Cards, Academic Transcripts & Promotion Management
+### Phase 9 — Report Cards, Academic Transcripts & Promotion Management (COMPLETED)
 * **Objective**: Automate end-of-term printable report card generation (`ReportCard`), customizable report card branding and signatures (`ReportCardTemplate`), audit version history on re-generation (`ReportCardVersion`), and end-of-term student promotion decisions (`PromotionDecision`).
 * **Dependencies**: Phase 8.
 * **Deliverables**:
@@ -139,21 +139,32 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 10 — Non-Teaching Staff & Administrative Directory
-* **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
-* **Dependencies**: Phase 9.
-* **Deliverables**: `Staff` model and APIs; administrative department directory.
-* **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
-* **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
+### Phase 10 — Fee Management & Finance (IN PROGRESS / PLANNING)
+* **Objective**: Design and build comprehensive Fee Management & Finance module covering optional Financial Years (`FinancialYear`), Fee Heads (`FeeHead`), Fee Structures (`FeeStructure`), Discounts & Scholarships (`FeeDiscount`), Late Fee Rules (`LateFeeRule`), 8-state Invoices (`Invoice`), Payments supporting reversals (`Payment`), printable PDF Receipts with reserved verification fields (`Receipt`), immutable Receipt Versions (`ReceiptVersion`), Student Fee Ledger (`StudentFeeLedger`), and Materialized Financial Summary Cache (`FinancialSummary`) without duplicating student or enrollment data.
+* **Dependencies**: Phase 9 (requires `AcademicSession`, `Enrollment`, `Student`, `Class`).
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod schemas and TypeScript types for `FinancialYear`, `FeeHead`, `FeeStructure`, `FeeDiscount`, `LateFeeRule`, `Invoice`, `Payment`, `Receipt`, `ReceiptVersion`, `StudentFeeLedger`, and `FinancialSummary`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#46` to `#56`; REST endpoints under `/api/v1/fee-heads`, `/api/v1/fee-structures`, `/api/v1/discounts`, `/api/v1/late-fee-rules`, `/api/v1/invoices`, `/api/v1/payments`, `/api/v1/receipts`, `/api/v1/student-ledger`, and `/api/v1/fee-reports`; RBAC scoping (`FEE_FINANCE_SCOPE`).
+  * **ERP Web UI (`apps/web`)**: Interactive pages for Fee Dashboard, Fee Heads & Structures Builder, Discounts & Scholarships, Late Fee Rules, Invoice Management, Payment Collection Desk & Receipts, Student Fee Ledger, and Financial Reports.
+* **Acceptance Criteria**:
+  * Fee billing strictly depends on `AcademicSession -> Enrollment -> Student -> Class` without duplicating student or enrollment data, supporting an optional `FinancialYear` reference.
+  * Single-school architecture is preserved (zero `schoolId` fields across collections).
+  * Invoices enforce an 8-state lifecycle (`DRAFT -> GENERATED -> ISSUED -> PARTIALLY_PAID -> PAID -> OVERDUE -> WAIVED -> CANCELLED`) and snapshot line items (`feeHeadName`, `feeHeadCode`, `baseAmount`, `discountAmount`, `discountName`, `netAmount`) so historical invoices remain unchanged even if fee structures are modified later.
+  * Payments support `ACTIVE` and `REVERSED` operational statuses instead of deleting payment records.
+  * Refunds, payment reversals, invoice waivers, and invoice cancellations require mandatory `auditReason` and `approvedBy` metadata.
+  * Receipts link 1-to-1 with Payment transactions, reserve `verificationHash` and `qrCodeUrl` for digital verification, and generate immutable `ReceiptVersion` snapshots on correction.
+  * StudentFeeLedger provides a chronological double-entry audit trail across invoices, payments, waivers, adjustments, and refunds.
+  * Financial reporting utilizes a materialized `FinancialSummary` cache for dashboards and reports instead of calculating on every request.
+* **Tests Required**: Verification suite `TEST-FEE-001` to `TEST-FEE-015` covering fee head creation, fee structure calculations, discount rules, late fee rules, invoice generation & line item snapshots, discount application & approval, full payment recording & receipt verification fields, partial payment handling, multi-invoice allocation, duplicate payment prevention, late fee calculation, refund/reversal workflow & receipt versioning, waiver/cancellation audit metadata & materialized summary cache, Student/Guardian RBAC isolation, and soft-archiving.
 
 ---
 
-### Phase 11 — Fee Structure, Billing & Payment Receipts
-* **Objective**: Build configurable fee structures, student fee billing, offline payment transaction ledger, and receipt PDFs.
-* **Dependencies**: Phase 4.
-* **Deliverables**: `FeeStructure`, `StudentFee`, `Payment`, `Receipt` models and APIs; Financial UI dashboard and receipt PDF generator.
-* **Acceptance Criteria**: Staff records offline Cash payment; system updates `StudentFee.paidAmount`, transforms status to `PAID`, and issues immutable Receipt number.
-* **Tests Required**: Fee payment transaction workflow test (`TEST-FLOW-FEE`); ACID transaction rollback test.
+### Phase 11 — Communication: Circulars, Notices & Holiday Calendar
+* **Objective**: Build audience-scoped notices, emergency announcements, and interactive school holiday calendar.
+* **Dependencies**: Phase 2.
+* **Deliverables**: `Notice`, `Event`, `Holiday` models and APIs; Circular publisher modal; Notification bell alert bar.
+* **Acceptance Criteria**: Publishing a circular scoped to `"PARENTS"` makes it visible in Parent Portal but invisible in Teacher Portal.
+* **Tests Required**: Circular audience filtering unit and integration tests.
 
 ---
 

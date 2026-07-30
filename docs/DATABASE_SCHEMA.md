@@ -57,9 +57,10 @@ erDiagram
 
     AcademicSession ||--|{ FeeStructure : "defines"
     Class ||--|{ FeeStructure : "applies to"
-    Enrollment ||--|{ StudentFee : "billed via"
-    FeeStructure ||--|{ StudentFee : "instantiates"
-    StudentFee ||--|{ Payment : "paid through"
+    FeeStructure ||--|{ Invoice : "generates"
+    Enrollment ||--|{ Invoice : "billed"
+    Enrollment ||--|| StudentFeeLedger : "has account"
+    Invoice ||--|{ Payment : "allocated from"
     Payment ||--|| Receipt : "generates"
 ```
 
@@ -1314,83 +1315,339 @@ End-of-term or end-of-year student promotion determination.
 
 ---
 
-### 3.8. Financial Management Collections (Fees & Accounting)
+### 3.10. Fee Management & Finance Collections (Phase 10)
 
-#### 38. `FeeStructure`
-Master template of fee charges per class and session.
+#### 46. `FinancialYear` (Optional / Planning Only)
+Optional master reference for fiscal accounting years without changing the current Academic Session dependency.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
-  * `classId`: ObjectId -> `Class` (Indexed)
-  * `feeHeadName`: String (e.g., `"Tuition Fee - Q1"`, `"Annual Computer Lab Fee"`)
-  * `amount`: Number (in INR)
-  * `dueDate`: Date
-  * `isOptional`: Boolean (Default `false`)
+  * `code`: String (Unique, Indexed, e.g., `"FY-2026-27"`, `"FY-2027-28"`)
+  * `name`: String (e.g., `"Financial Year 2026-27"`)
+  * `startDate`: Date (Required)
+  * `endDate`: Date (Required)
+  * `status`: Enum (`"ACTIVE" | "CLOSED" | "ARCHIVED"`, Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ schoolId: 1, academicSessionId: 1, classId: 1, feeHeadName: 1 }` (Unique)
+  * `{ code: 1 }` (Unique)
+  * `{ status: 1 }`
 
-#### 39. `StudentFee`
-Applicable fee billing item assigned to a specific student enrollment.
+#### 47. `FeeHead`
+Master catalog of fee categories and charge heads.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
-  * `studentId`: ObjectId -> `Student` (Indexed)
+  * `name`: String (Required, Indexed, e.g., `"Tuition Fee"`, `"Examination Fee"`, `"Library Fee"`, `"Sports Fee"`)
+  * `code`: String (Unique, Indexed, e.g., `"TUITION"`, `"EXAM"`, `"LIBRARY"`, `"SPORTS"`, `"DEV"`, `"ADMISSION"`)
+  * `category`: Enum (`"ADMISSION" | "TUITION" | "EXAMINATION" | "LIBRARY" | "LABORATORY" | "SPORTS" | "DEVELOPMENT" | "TRANSPORT" | "CUSTOM"`, Default `"TUITION"`)
+  * `frequency`: Enum (`"ONE_TIME" | "MONTHLY" | "QUARTERLY" | "BI_ANNUALLY" | "ANNUALLY"`, Default `"QUARTERLY"`)
+  * `isRefundable`: Boolean (Default `false`)
+  * `description`: String (Optional)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`, Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User` (Required)
+  * `updatedBy`: ObjectId -> `User` (Required)
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ code: 1 }` (Unique)
+  * `{ name: 1 }` (Unique)
+  * `{ category: 1, status: 1 }`
+
+#### 48. `FeeStructure`
+Master template of fee charges per academic session and class.
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String (Required, e.g., `"Class 10 Regular Fee Structure 2026-27"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `financialYearId`: ObjectId -> `FinancialYear` (Optional reference for future accounting)
+  * `classId`: ObjectId -> `Class` (Required, Indexed)
+  * `feeComponents`: Array<{
+      `feeHeadId`: ObjectId -> `FeeHead` (Required),
+      `amount`: Number (Required positive integer in INR),
+      `isOptional`: Boolean (Default `false`),
+      `isTransport`: Boolean (Default `false`)
+    }>
+  * `totalAmount`: Number (Sum of mandatory component amounts)
+  * `installments`: Array<{
+      `installmentNumber`: Number (1, 2, 3, 4),
+      `name`: String (`"Quarter 1"`, `"Quarter 2"`, etc.),
+      `percentage`: Number (Percentage of total amount, e.g., 25),
+      `amount`: Number,
+      `dueDate`: Date (Required),
+      `lateFeeRuleId`: ObjectId -> `LateFeeRule` (Optional)
+    }>
+  * `applicableDiscountIds`: Array<ObjectId -> `FeeDiscount`>
+  * `status`: Enum (`"DRAFT" | "ACTIVE" | "ARCHIVED"`, Default `"DRAFT"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1, classId: 1, status: 1 }`
+  * `{ status: 1 }`
+
+#### 49. `FeeDiscount`
+Discount and scholarship definitions (Fixed Amount, Percentage, Need Based, Merit Based, Approval Workflow).
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String (Required, e.g., `"Sibling Concession 10%"`, `"Merit Scholarship 5000 INR"`, `"Staff Ward Concession"`)
+  * `code`: String (Unique, e.g., `"SIBLING_10"`, `"MERIT_5000"`)
+  * `discountType`: Enum (`"FIXED_AMOUNT" | "PERCENTAGE"`)
+  * `value`: Number (Amount in INR or percentage 0-100)
+  * `category`: Enum (`"SIBLING" | "MERIT" | "NEED_BASED" | "STAFF_WARD" | "GENERAL" | "SCHOLARSHIP"`)
+  * `requiresApproval`: Boolean (Default `true`)
+  * `applicableFeeHeadIds`: Array<ObjectId -> `FeeHead`> (Empty = applies to total fee)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`, Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ code: 1 }` (Unique)
+  * `{ category: 1, status: 1 }`
+
+#### 50. `LateFeeRule`
+Late fee calculation rules (Fixed, Percentage, Per Day, Grace Period).
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String (Required, e.g., `"Standard Late Fee 50 INR/Day"`, `"5% Flat After Grace Period"`)
+  * `ruleType`: Enum (`"FIXED" | "PERCENTAGE" | "PER_DAY"`)
+  * `amountOrPercentage`: Number (in INR or %)
+  * `gracePeriodDays`: Number (Default `0`)
+  * `maxLateFeeLimit`: Number (Optional cap in INR)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`, Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ name: 1 }` (Unique)
+  * `{ status: 1 }`
+
+#### 51. `Invoice`
+Student fee billing invoice generated per enrollment and installment/term.
+* **Fields**:
+  * `_id`: ObjectId
+  * `invoiceNumber`: String (Unique sequence, e.g., `"INV-202607-0001"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `financialYearId`: ObjectId -> `FinancialYear` (Optional reference for future accounting)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, Indexed)
+  * `studentId`: ObjectId -> `Student` (Required, Indexed)
+  * `classId`: ObjectId -> `Class` (Required, Indexed)
   * `feeStructureId`: ObjectId -> `FeeStructure`
-  * `baseAmount`: Number
-  * `discountAmount`: Number (Default `0`)
-  * `concessionReason`: String (e.g., `"Sibling Discount"`, `"Merit Scholarship"`)
-  * `netAmount`: Number (`baseAmount - discountAmount`)
-  * `paidAmount`: Number (Default `0`)
-  * `status`: Enum (`"UNPAID" | "PARTIAL" | "PAID" | "OVERDUE"`)
-  * `dueDate`: Date
-* **Indexes**:
-  * `{ enrollmentId: 1, feeStructureId: 1 }` (Unique)
-  * `{ schoolId: 1, status: 1, dueDate: 1 }`
-
-#### 40. `Payment`
-Immutable transaction ledger for fee payments.
-* **Fields**:
-  * `_id`: ObjectId
-  * `schoolId`: String
-  * `paymentTransactionId`: String (Unique, e.g., `"PAY-20260727-0019"`)
-  * `studentId`: ObjectId -> `Student` (Indexed)
-  * `enrollmentId`: ObjectId -> `Enrollment`
-  * `paidByGuardianId`: ObjectId -> `Guardian` (Optional)
-  * `recordedByStaffId`: ObjectId -> `User`
-  * `amountPaid`: Number
-  * `paymentMode`: Enum (`"CASH" | "CHEQUE" | "DD" | "ONLINE_BANK_TRANSFER"`)
-  * `referenceNumber`: String (Cheque/DD number)
-  * `paymentDate`: Date
-  * `allocatedFeeIds`: Array<{ studentFeeId: ObjectId, amountAllocated: Number }>
+  * `installmentNumber`: Number (1, 2, 3, etc.)
+  * `title`: String (`"Q1 Fee Invoice 2026-27"`)
+  * `dueDate`: Date (Required, Indexed)
+  * `lineItems`: Array<{
+      `feeHeadId`: ObjectId -> `FeeHead`,
+      `feeHeadName`: String (Snapshot of FeeHead.name so historical invoices remain unchanged even if fee structures are modified later),
+      `feeHeadCode`: String (Snapshot of FeeHead.code),
+      `baseAmount`: Number (Snapshot of FeeStructure component amount),
+      `discountAmount`: Number (Concession amount applied to this line item),
+      `discountName`: String (Snapshot of discount name),
+      `netAmount`: Number (`baseAmount - discountAmount`)
+    }>
+  * `baseTotal`: Number (Sum of lineItems baseAmount)
+  * `discountTotal`: Number (Total concessions/scholarships applied)
+  * `lateFeeAmount`: Number (Calculated dynamically or accrued after due date)
+  * `netTotal`: Number (`baseTotal - discountTotal + lateFeeAmount`)
+  * `paidAmount`: Number (Running total of payments allocated to this invoice)
+  * `outstandingAmount`: Number (`netTotal - paidAmount`)
+  * `status`: Enum (`"DRAFT" | "GENERATED" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "WAIVED" | "CANCELLED"`, Default `"DRAFT"`)
+  * `appliedDiscounts`: Array<{
+      `discountId`: ObjectId -> `FeeDiscount`,
+      `discountName`: String,
+      `amount`: Number,
+      `approvedBy`: ObjectId -> `User`
+    }>
+  * `waivedDetails`: {
+      `auditReason`: String (Mandatory audit reason for fee waiver),
+      `approvedBy`: ObjectId -> `User` (Mandatory approver metadata),
+      `waivedAt`: Date,
+      `waivedAmount`: Number
+    }
+  * `cancelledDetails`: {
+      `auditReason`: String (Mandatory audit reason for invoice cancellation),
+      `approvedBy`: ObjectId -> `User` (Mandatory approver metadata),
+      `cancelledAt`: Date
+    }
   * `remarks`: String
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ schoolId: 1, paymentTransactionId: 1 }` (Unique)
-  * `{ studentId: 1, paymentDate: 1 }`
+  * `{ invoiceNumber: 1 }` (Unique)
+  * `{ academicSessionId: 1, enrollmentId: 1, installmentNumber: 1 }` (Unique per installment)
+  * `{ studentId: 1, status: 1 }`
+  * `{ status: 1, dueDate: 1 }`
 
-#### 41. `Receipt`
-Generated receipt metadata linking a payment to a printable PDF document.
+#### 52. `Payment`
+Immutable transaction ledger for fee payments against student invoices.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
+  * `paymentTransactionId`: String (Unique sequence, e.g., `"PAY-20260730-0042"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `financialYearId`: ObjectId -> `FinancialYear` (Optional reference for future accounting)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, Indexed)
+  * `studentId`: ObjectId -> `Student` (Required, Indexed)
+  * `paidByGuardianId`: ObjectId -> `Guardian` (Optional)
+  * `recordedByUserId`: ObjectId -> `User` (Required, Accountant/Staff)
+  * `amountPaid`: Number (Required positive integer in INR)
+  * `paymentMode`: Enum (`"CASH" | "UPI" | "CARD" | "BANK_TRANSFER" | "CHEQUE" | "ONLINE_GATEWAY"`)
+  * `referenceNumber`: String (Cheque #, UPI UTR, Bank transaction ID)
+  * `paymentDate`: Date (Required, Indexed)
+  * `allocations`: Array<{
+      `invoiceId`: ObjectId -> `Invoice`,
+      `amountAllocated`: Number
+    }>
+  * `status`: Enum (`"ACTIVE" | "REVERSED" | "COMPLETED" | "PENDING_CLEARANCE" | "BOUNCED" | "REFUNDED"`, Default `"ACTIVE"`)
+  * `refundDetails`: {
+      `auditReason`: String (Mandatory audit reason for refund),
+      `approvedBy`: ObjectId -> `User` (Mandatory approver metadata),
+      `refundedAt`: Date,
+      `refundedAmount`: Number
+    }
+  * `reversalDetails`: {
+      `auditReason`: String (Mandatory audit reason for reversal),
+      `approvedBy`: ObjectId -> `User` (Mandatory approver metadata),
+      `reversedAt`: Date
+    }
+  * `remarks`: String
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ paymentTransactionId: 1 }` (Unique)
+  * `{ studentId: 1, paymentDate: -1 }`
+  * `{ enrollmentId: 1, status: 1 }`
+
+#### 53. `Receipt`
+Printable PDF receipt generated for each completed payment transaction.
+* **Fields**:
+  * `_id`: ObjectId
   * `receiptNumber`: String (Unique sequence, e.g., `"REC-2026-00084"`)
   * `paymentId`: ObjectId -> `Payment` (Unique indexed)
-  * `studentId`: ObjectId -> `Student`
-  * `issuedDate`: Date
-  * `pdfReceiptUrl`: String (Protected URL)
+  * `invoiceIds`: Array<ObjectId -> `Invoice`>
+  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
+  * `studentId`: ObjectId -> `Student` (Indexed)
+  * `issuedDate`: Date (Required)
+  * `totalAmount`: Number
+  * `paymentMode`: String
+  * `pdfUrl`: String (Protected path to printable receipt PDF)
+  * `verificationHash`: String (Reserved for digital cryptographic verification — planning only)
+  * `qrCodeUrl`: String (Reserved for QR code verification URL — planning only)
+  * `versionNumber`: Number (Default `1`)
+  * `versionHistory`: Array<{
+      `versionNumber`: Number,
+      `generatedAt`: Date,
+      `generatedBy`: ObjectId -> `User`,
+      `changeReason`: String,
+      `pdfUrl`: String
+    }>
+  * `status`: Enum (`"ACTIVE" | "CANCELLED"`, Default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ schoolId: 1, receiptNumber: 1 }` (Unique)
+  * `{ receiptNumber: 1 }` (Unique)
+  * `{ paymentId: 1 }` (Unique)
+  * `{ studentId: 1, issuedDate: -1 }`
+
+#### 54. `ReceiptVersion` (Immutable Audit Snapshot)
+Immutable snapshot table preserving historical receipt versions when corrections occur.
+* **Fields**:
+  * `_id`: ObjectId
+  * `receiptId`: ObjectId -> `Receipt` (Required, Indexed)
+  * `versionNumber`: Number (Required)
+  * `generatedAt`: Date (Required)
+  * `generatedBy`: ObjectId -> `User` (Required)
+  * `changeReason`: String (Required audit reason for receipt correction)
+  * `snapshotData`: Object (Complete JSON payload of receipt before correction)
+  * `pdfUrl`: String (Archived PDF URL)
+  * `verificationHash`: String (Reserved for verification hash snapshot)
+  * `qrCodeUrl`: String (Reserved for QR code URL snapshot)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ receiptId: 1, versionNumber: 1 }` (Unique)
+
+#### 55. `StudentFeeLedger`
+Aggregated financial account ledger per student enrollment tracking invoices, payments, receipts, waivers, adjustments, refunds, advance balance, and outstanding balance.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `financialYearId`: ObjectId -> `FinancialYear` (Optional reference for future accounting)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, Indexed)
+  * `studentId`: ObjectId -> `Student` (Required, Indexed)
+  * `classId`: ObjectId -> `Class` (Indexed)
+  * `totalInvoiced`: Number (Cumulative net total of all invoices)
+  * `totalPaid`: Number (Cumulative payments received)
+  * `totalWaived`: Number (Cumulative waived amounts)
+  * `totalRefunded`: Number (Cumulative refunded amounts)
+  * `advanceBalance`: Number (Unallocated advance payments credit)
+  * `outstandingBalance`: Number (`totalInvoiced - totalPaid - totalWaived + totalRefunded - advanceBalance`)
+  * `ledgerEntries`: Array<{
+      `entryId`: String,
+      `date`: Date,
+      `entryType`: Enum (`"INVOICE" | "PAYMENT" | "WAIVER" | "ADJUSTMENT" | "REFUND"`),
+      `referenceId`: ObjectId,
+      `referenceNumber`: String,
+      `description`: String,
+      `debit`: Number,
+      `credit`: Number,
+      `runningBalance`: Number
+    }>
+  * `lastUpdatedAt`: Date
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1, enrollmentId: 1 }` (Unique)
+  * `{ studentId: 1 }`
+  * `{ outstandingBalance: -1 }`
+
+#### 56. `FinancialSummary` (Materialized Summary Cache)
+Materialized financial summary cache for executive dashboards and reports instead of calculating on every request.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `financialYearId`: ObjectId -> `FinancialYear` (Optional reference)
+  * `classId`: ObjectId -> `Class` (Optional, null = school-wide aggregate)
+  * `totalInvoiced`: Number
+  * `totalCollected`: Number
+  * `totalWaived`: Number
+  * `totalOutstanding`: Number
+  * `defaultersCount`: Number
+  * `collectionByMode`: {
+      `cash`: Number,
+      `upi`: Number,
+      `card`: Number,
+      `bankTransfer`: Number,
+      `cheque`: Number,
+      `onlineGateway`: Number
+    }
+  * `lastCalculatedAt`: Date
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1, classId: 1 }` (Unique)
+  * `{ lastCalculatedAt: 1 }`
 
 ---
 
-### 3.9. Communication, CMS & Admissions Collections
+### 3.11. Communication, CMS & Admissions Collections
 
-#### 42. `Notice`
+#### 57. `Notice`
 Public and portal circulars.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
   * `title`: String
   * `content`: String
   * `targetAudience`: Array<Enum (`"ALL" | "TEACHERS" | "STUDENTS" | "PARENTS"`)>
@@ -1400,13 +1657,12 @@ Public and portal circulars.
   * `publishDate`: Date
   * `expiryDate`: Date (Optional TTL indexing)
 * **Indexes**:
-  * `{ schoolId: 1, publishDate: -1, isPublicWebsiteNotice: 1 }`
+  * `{ publishDate: -1, isPublicWebsiteNotice: 1 }`
 
-#### 43. `Event`
+#### 58. `Event`
 School event calendar items.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
   * `title`: String
   * `description`: String
   * `eventStartDate`: Date
@@ -1415,13 +1671,12 @@ School event calendar items.
   * `isPublic`: Boolean (Default `true`)
   * `coverImageUrl`: String
 * **Indexes**:
-  * `{ schoolId: 1, eventStartDate: 1 }`
+  * `{ eventStartDate: 1 }`
 
-#### 44. `AdmissionEnquiry`
+#### 59. `AdmissionEnquiry`
 Prospective student enquiry leads.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
   * `enquiryNumber`: String (Unique, e.g., `"ENQ-2026-015"`)
   * `studentFirstName`: String
   * `studentLastName`: String
@@ -1434,21 +1689,20 @@ Prospective student enquiry leads.
   * `notes`: Array<{ noteText: String, createdBy: ObjectId, createdAt: Date }>
   * `enquiryDate`: Date
 * **Indexes**:
-  * `{ schoolId: 1, status: 1, enquiryDate: -1 }`
+  * `{ status: 1, enquiryDate: -1 }`
 
-#### 45. `GalleryAlbum`
+#### 60. `GalleryAlbum`
 CMS photo gallery album container.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
   * `title`: String (`"Annual Sports Day 2025"`, `"Science Exhibition"`)
   * `description`: String
   * `coverImageUrl`: String
   * `isPublished`: Boolean (Default `true`)
 * **Indexes**:
-  * `{ schoolId: 1, isPublished: 1 }`
+  * `{ isPublished: 1 }`
 
-#### 46. `GalleryImage`
+#### 61. `GalleryImage`
 Individual photos within a GalleryAlbum.
 * **Fields**:
   * `_id`: ObjectId
@@ -1459,11 +1713,10 @@ Individual photos within a GalleryAlbum.
 * **Indexes**:
   * `{ albumId: 1, order: 1 }`
 
-#### 47. `Document`
+#### 62. `Document`
 Secure repository for private student/teacher documents.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
   * `ownerType`: Enum (`"STUDENT" | "TEACHER" | "SCHOOL"`)
   * `ownerId`: ObjectId (Indexed — Student or Teacher ID)
   * `documentType`: Enum (`"BIRTH_CERTIFICATE" | "TRANSFER_CERTIFICATE" | "ID_PROOF" | "MEDICAL_REPORT"`)
@@ -1475,11 +1728,10 @@ Secure repository for private student/teacher documents.
 * **Indexes**:
   * `{ ownerType: 1, ownerId: 1, documentType: 1 }`
 
-#### 48. `AuditLog`
+#### 63. `AuditLog`
 Immutable security and administrative audit ledger.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String (Indexed)
   * `actorUserId`: ObjectId -> `User` (Indexed)
   * `actionCode`: String (e.g., `"FEE_PAYMENT_RECORDED"`, `"MARK_UPDATED"`, `"STUDENT_PROMOTED"`, `"USER_LOGIN"`)
   * `targetEntityType`: String (`"Payment"`, `"Mark"`, `"Enrollment"`)
@@ -1490,10 +1742,9 @@ Immutable security and administrative audit ledger.
   * `beforeState`: Object (JSON snapshot before mutation)
   * `afterState`: Object (JSON snapshot after mutation)
 * **Indexes**:
-  * `{ schoolId: 1, timestamp: -1 }`
+  * `{ timestamp: -1 }`
   * `{ targetEntityType: 1, targetEntityId: 1 }`
   * `{ actorUserId: 1, timestamp: -1 }`
-
 ---
 
 ## 4. Deep-Dive: Academic History & Promotion Strategy

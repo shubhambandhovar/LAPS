@@ -41,5 +41,16 @@ export * from './ReportCard';
 export * from './ReportCardTemplate';
 export * from './ReportCardVersion';
 export * from './PromotionDecision';
+export * from './FinancialYear';
+export * from './FeeHead';
+export * from './FeeStructure';
+export * from './FeeDiscount';
+export * from './LateFeeRule';
+export * from './Invoice';
+export * from './Payment';
+export * from './Receipt';
+export * from './ReceiptVersion';
+export * from './StudentFeeLedger';
+export * from './FinancialSummary';
 
 

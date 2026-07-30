@@ -58,6 +58,15 @@ import {
   PromotionManagementPage,
   MyReportCardsPage,
 } from '../modules/report-cards';
+import {
+  NotificationCenter,
+  NoticeBoard,
+  NoticeManager,
+  TemplateManager,
+  DeliveryDashboard,
+  ScheduledNotifications,
+  NotificationPreferences,
+} from '../modules/communication';
 
 const router = createBrowserRouter([
   {
@@ -233,6 +242,35 @@ const router = createBrowserRouter([
       {
         path: 'report-cards/my-report-cards',
         element: <MyReportCardsPage />,
+      },
+      // Phase 11: Communication & Notification System
+      {
+        path: 'communication/notifications',
+        element: <NotificationCenter />,
+      },
+      {
+        path: 'communication/notices',
+        element: <NoticeBoard />,
+      },
+      {
+        path: 'communication/notices/manage',
+        element: <NoticeManager />,
+      },
+      {
+        path: 'communication/templates',
+        element: <TemplateManager />,
+      },
+      {
+        path: 'communication/delivery-logs',
+        element: <DeliveryDashboard />,
+      },
+      {
+        path: 'communication/scheduled',
+        element: <ScheduledNotifications />,
+      },
+      {
+        path: 'communication/preferences',
+        element: <NotificationPreferences />,
       },
     ],
   },

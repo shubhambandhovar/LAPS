@@ -45,6 +45,12 @@ import paymentRoutes from './payment.routes';
 import receiptRoutes from './receipt.routes';
 import studentLedgerRoutes from './studentLedger.routes';
 import feeReportRoutes from './feeReport.routes';
+import notificationRoutes from './notification.routes';
+import noticeRoutes from './notice.routes';
+import templateRoutes from './template.routes';
+import preferenceRoutes from './preference.routes';
+import deliveryLogRoutes from './deliveryLog.routes';
+import scheduledNotificationRoutes from './scheduledNotification.routes';
 
 const router = Router();
 
@@ -114,6 +120,14 @@ router.use('/payments', paymentRoutes);
 router.use('/receipts', receiptRoutes);
 router.use('/student-ledger', studentLedgerRoutes);
 router.use('/fee-reports', feeReportRoutes);
+
+// Phase 11: Mount Communication & Notification System endpoints
+router.use('/notifications', notificationRoutes);
+router.use('/notices', noticeRoutes);
+router.use('/templates', templateRoutes);
+router.use('/preferences', preferenceRoutes);
+router.use('/delivery-logs', deliveryLogRoutes);
+router.use('/scheduled-notifications', scheduledNotificationRoutes);
 
 export default router;
 

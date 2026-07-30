@@ -338,3 +338,36 @@ In Phase 10, automated verification in `apps/api/src/__tests__/fee.test.ts` exec
     * Logged-in Student or Guardian queries `GET /api/v1/invoices/my` and `GET /api/v1/student-ledger/my` -> Asserts only records belonging to their own enrollment are returned; attempting to query another student returns `403 RBAC_PERMISSION_DENIED`.
 15. **Soft-Archive Fee Entities (`TEST-FEE-015`)**:
     * Soft-archive a `FeeHead`, `FeeStructure`, `FeeDiscount`, and `LateFeeRule` (`PATCH /:id/archive`) -> Asserts `status: "ARCHIVED"` and exclusion from active queries.
+
+### 3.13. Communication & Notification System Verification Suite (`TEST-COMM-001` through `TEST-COMM-015` — Phase 11)
+In Phase 11, automated verification in `apps/api/src/__tests__/communication.test.ts` executes the following 15-test verification suite:
+1. **Create NotificationTemplate (`TEST-COMM-001`)**:
+   * Admin creates `NotificationTemplate` (`POST /api/v1/templates`) with unique code (`FEE_DUE_REMINDER`), category, channels (`IN_APP`, `EMAIL`, `SMS`), and Mustache/Handlebars variables -> Asserts successful creation and schema validation.
+2. **Template Rendering Preview (`TEST-COMM-002`)**:
+   * Call `POST /api/v1/templates/:id/preview` with sample variable payload (`{ studentName: "Aarav", dueDate: "2026-08-10" }`) -> Asserts dynamic variable interpolation renders correctly in subject and body.
+3. **Create Notice (Draft & Publish) (`TEST-COMM-003`)**:
+   * Admin creates a `Notice` (`POST /api/v1/notices`) in `status: "DRAFT"`, then calls `PATCH /api/v1/notices/:id/publish` -> Asserts status transitions to `"PUBLISHED"` and publish date is set.
+4. **Notice Role & Class Audience Scoping (`TEST-COMM-004`)**:
+   * Student1 queries `GET /api/v1/notices` -> Asserts only notices targeting `"ALL"`, `"STUDENT"` role, or Student1's Class/Section are returned; expired notices are excluded.
+5. **Teacher Notice Authoring & RBAC Scoping (`TEST-COMM-005`)**:
+   * Teacher attempts to create and publish a notice for their assigned class -> Asserts success; attempts to publish to an unassigned class -> Asserts `403 RBAC_PERMISSION_DENIED`.
+6. **Send Immediate Direct Notification (`TEST-COMM-006`)**:
+   * Admin sends a direct notification (`POST /api/v1/notifications/send`) to Student1 -> Asserts `Notification` document is created with `readStatus: "UNREAD"`, and a `DeliveryLog` entry is created with `status: "SENT"` or `"DELIVERED"`.
+7. **Send Bulk Notifications with Template Interpolation (`TEST-COMM-007`)**:
+   * Admin sends bulk fee reminder (`POST /api/v1/notifications/bulk-send`) using `templateId` -> Asserts individualized notifications and delivery logs are created for each target recipient.
+8. **Notification Read & Unread Badge Count (`TEST-COMM-008`)**:
+   * Student1 queries unread badge count (`GET /api/v1/notifications/unread-count`), marks notification as read (`PATCH /api/v1/notifications/:id/read`), asserts unread badge count decrements and `readAt` timestamp is set.
+9. **Mark All as Read & Archive Notification (`TEST-COMM-009`)**:
+   * Call `PATCH /api/v1/notifications/read-all` and `PATCH /api/v1/notifications/:id/archive` -> Asserts all unread become `"READ"` and archived notification is excluded from main feed.
+10. **User Notification Preferences (Opt-in / Opt-out) (`TEST-COMM-010`)**:
+    * Student1 opts out of SMS and Email for the `FEE` category (`PUT /api/v1/preferences/my`) -> Trigger fee notification -> Asserts IN_APP notification is created, but Email and SMS deliveries are skipped based on preference.
+11. **Scheduled Notification Scheduling (`TEST-COMM-011`)**:
+    * Admin schedules a future notification (`POST /api/v1/scheduled-notifications`) with `scheduledAt` -> Asserts job created with `status: "PENDING"`.
+12. **Scheduled Notification Processing (`TEST-COMM-012`)**:
+    * Simulate scheduler queue processing of pending job -> Asserts status transitions to `"COMPLETED"` and target notifications are dispatched.
+13. **Cancel Scheduled Notification (`TEST-COMM-013`)**:
+    * Admin cancels a pending scheduled notification (`PATCH /api/v1/scheduled-notifications/:id/cancel`) -> Asserts `status: "CANCELLED"` and no notifications are dispatched.
+14. **Delivery Log Failure & Retry Handling (`TEST-COMM-014`)**:
+    * Simulate a failed delivery log entry (`status: "FAILED"`, `failureReason`), invoke `POST /api/v1/delivery-logs/:id/retry` -> Asserts retry count increments and delivery status updates.
+15. **Self-Service RBAC Isolation (`TEST-COMM-015`)**:
+    * Student1 attempts to read, mark read, archive, or delete Student2's notification or modify Student2's preferences -> Asserts rejection with `403 RBAC_PERMISSION_DENIED`.

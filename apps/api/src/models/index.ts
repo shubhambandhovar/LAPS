@@ -52,5 +52,11 @@ export * from './Receipt';
 export * from './ReceiptVersion';
 export * from './StudentFeeLedger';
 export * from './FinancialSummary';
+export * from './Notification';
+export * from './Notice';
+export * from './NotificationTemplate';
+export * from './DeliveryLog';
+export * from './NotificationPreference';
+export * from './ScheduledNotification';
 
 

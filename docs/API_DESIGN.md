@@ -433,17 +433,60 @@ Standard collection endpoints accept uniform URL query parameters:
 * `GET    /api/v1/fee-reports/student-statement/:enrollmentId`: Generate printable comprehensive financial statement for an individual student.
 
 
-### 5.12. Communication & Public CMS (`/api/v1/communication`, `/api/v1/cms`)
-* `GET  /api/v1/communication/notices`: List circulars and notices scoped to user audience.
-* `POST /api/v1/communication/notices`: Admin create and publish circular.
+### 5.12. Communication & Notification System (`/api/v1/notifications`, `/api/v1/notices`, `/api/v1/templates`, `/api/v1/preferences`, `/api/v1/delivery-logs`, `/api/v1/scheduled-notifications`)
+
+#### A. Notifications (`/api/v1/notifications`)
+* `GET    /api/v1/notifications`: List current user's notifications (filterable by `readStatus`, `category`, `priority`, `isArchived`, paginated).
+* `GET    /api/v1/notifications/unread-count`: Get badge count of unread notifications for current user.
+* `PATCH  /api/v1/notifications/:id/read`: Mark a single notification as read (`readStatus: "READ"`).
+* `PATCH  /api/v1/notifications/read-all`: Mark all unread notifications as read for current user.
+* `PATCH  /api/v1/notifications/:id/archive`: Archive a notification (`isArchived: true`) so it is hidden from main feed.
+* `DELETE /api/v1/notifications/:id`: Delete/soft-delete a notification from current user's feed.
+* `POST   /api/v1/notifications/send`: (Admin/Teacher) Send an immediate direct notification to specified users, classes, or sections.
+* `POST   /api/v1/notifications/bulk-send`: (Admin) Send bulk notifications with template variable interpolation.
+
+#### B. Notices (`/api/v1/notices`)
+* `GET    /api/v1/notices`: List published notices available to the current user (based on role/class/section audience scoping and non-expired status).
+* `GET    /api/v1/notices/admin`: (Admin/Teacher) List all notices including DRAFT, EXPIRED, and ARCHIVED.
+* `GET    /api/v1/notices/:id`: Retrieve detailed notice information including attachments and target audience.
+* `POST   /api/v1/notices`: Create a new notice (Draft or Published) with target audience and attachments.
+* `PATCH  /api/v1/notices/:id`: Update notice title, content, target audience, attachments, or expiry date.
+* `PATCH  /api/v1/notices/:id/publish`: Publish a DRAFT notice (`status: "PUBLISHED"`).
+* `PATCH  /api/v1/notices/:id/archive`: Archive a notice (`status: "ARCHIVED"`).
+* `DELETE /api/v1/notices/:id`: Delete a notice.
+
+#### C. Notification Templates (`/api/v1/templates`)
+* `GET    /api/v1/templates`: List all notification templates (filterable by `category`, `channel`, `isActive`).
+* `GET    /api/v1/templates/:code`: Retrieve template by code and locale.
+* `POST   /api/v1/templates`: Create a new SMS, Email, or In-App template with variable placeholders.
+* `PATCH  /api/v1/templates/:id`: Update template body, subject, channels, variables, or active status.
+* `POST   /api/v1/templates/:id/preview`: Preview rendered template output given a sample JSON variables payload.
+
+#### D. Notification Preferences (`/api/v1/preferences`)
+* `GET    /api/v1/preferences/my`: Retrieve current user's category/channel opt-in and opt-out preferences.
+* `PUT    /api/v1/preferences/my`: Update current user's category/channel opt-in and opt-out preferences.
+* `GET    /api/v1/preferences/:userId`: (Admin) Retrieve any user's notification preferences.
+
+#### E. Delivery Logs (`/api/v1/delivery-logs`)
+* `GET    /api/v1/delivery-logs`: (Admin) List notification delivery logs (filterable by `status`, `channel`, `recipientId`, `notificationId`, `noticeId`).
+* `GET    /api/v1/delivery-logs/stats`: (Admin) Retrieve aggregate delivery metrics (sent, delivered, failed counts by channel).
+* `POST   /api/v1/delivery-logs/:id/retry`: (Admin) Retry a failed delivery log entry.
+
+#### F. Scheduled Notifications (`/api/v1/scheduled-notifications`)
+* `GET    /api/v1/scheduled-notifications`: (Admin) List scheduled and recurring notification jobs.
+* `POST   /api/v1/scheduled-notifications`: (Admin) Schedule a future or recurring notification dispatch job.
+* `PATCH  /api/v1/scheduled-notifications/:id/cancel`: (Admin) Cancel a pending scheduled notification job (`status: "CANCELLED"`).
+
+
+### 5.13. Public CMS & Website Content (`/api/v1/cms`)
 * `GET  /api/v1/cms/gallery/albums`: Public/Admin view photo gallery albums.
 * `POST /api/v1/cms/gallery/albums`: Admin create gallery album and upload images.
 * `PATCH /api/v1/cms/homepage`: Update homepage hero banners, announcement ticker, and principal message.
 
-### 5.13. Admission Enquiries (`/api/v1/admissions`)
+### 5.14. Admission Enquiries (`/api/v1/admissions`)
 * `POST /api/v1/admissions/enquiries`: Public website endpoint to submit online admission inquiry.
 * `GET  /api/v1/admissions/enquiries`: Admin/Receptionist paginated Kanban view of enquiries.
 * `PATCH /api/v1/admissions/enquiries/:id/status`: Update inquiry pipeline status and append follow-up notes.
 
-### 5.14. Audit System & Security Logs (`/api/v1/audit-logs`)
+### 5.15. Audit System & Security Logs (`/api/v1/audit-logs`)
 * `GET  /api/v1/audit-logs`: Super Admin search across immutable audit logs (filterable by actor, action code, date range, entity).

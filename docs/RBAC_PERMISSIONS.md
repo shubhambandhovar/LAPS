@@ -160,6 +160,34 @@ Fee Management and financial accounting operations enforce strict institutional 
    - `STUDENT` and `GUARDIAN` users can view ONLY their own (or ward's) active `Enrollment` fee ledger (`GET /api/v1/student-ledger/my`), fee invoices (`GET /api/v1/invoices/my`), and printable payment receipts (`GET /api/v1/receipts/:id/download`).
    - Attempting to access another student's fee ledger, invoices, or receipts returns `403 RBAC_PERMISSION_DENIED`.
 
+### 3.10. Communication & Notification System Scoping
+
+The Communication & Notification System (`/api/v1/notifications`, `/api/v1/notices`, `/api/v1/templates`, `/api/v1/preferences`, `/api/v1/delivery-logs`, `/api/v1/scheduled-notifications`) enforces strict multi-level access control:
+
+#### Dynamic Permission Matrix for Communication & Notifications:
+
+| Role | Notifications (`/notifications`) | Notices (`/notices`) | Templates (`/templates`) | Preferences (`/preferences`) | Delivery Logs (`/delivery-logs`) | Scheduled Notifications (`/scheduled-notifications`) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`SUPER_ADMIN`** | ALL (Direct & Bulk Send) | ALL | ALL | VIEW ALL & MODIFY OWN | VIEW & RETRY ALL | ALL |
+| **`SCHOOL_ADMIN`** | ALL (Direct & Bulk Send) | ALL | ALL | VIEW ALL & MODIFY OWN | VIEW & RETRY ALL | ALL |
+| **`ACCOUNTANT`** | SEND (Fee Category Only) | CREATE & PUBLISH (Fee Notice) | VIEW ONLY | MODIFY OWN | VIEW (Fee Category Only) | VIEW ONLY |
+| **`TEACHER`** | SEND (Assigned Classes/Sections) | CREATE (Assigned Classes/Sections) | VIEW ONLY | MODIFY OWN | VIEW (Own Sent) | NO ACCESS |
+| **`STUDENT`** | READ & ARCHIVE OWN | VIEW (Targeted to Role/Class) | NO ACCESS | MODIFY OWN | NO ACCESS | NO ACCESS |
+| **`GUARDIAN`** | READ & ARCHIVE OWN | VIEW (Targeted to Role/Class) | NO ACCESS | MODIFY OWN | NO ACCESS | NO ACCESS |
+
+#### Architectural Scoping Rules for Communication & Notifications:
+1. **Self-Service Notification & Preference Isolation**:
+   - Every user (`SUPER_ADMIN`, `SCHOOL_ADMIN`, `TEACHER`, `STUDENT`, `GUARDIAN`, `STAFF`) may ONLY read, mark read, archive, or delete their own notifications (`req.user.id === targetUserId`).
+   - Every user may ONLY read or update their own category and channel opt-in/opt-out preferences (`/api/v1/preferences/my`).
+   - Attempting to access or mutate another user's notifications or preferences returns `403 RBAC_PERMISSION_DENIED`.
+2. **Teacher Broadcast & Notice Authoring Scoping**:
+   - Teachers can create and publish notices (`POST /api/v1/notices`) or send direct notifications (`POST /api/v1/notifications/send`) ONLY to students and guardians enrolled in classes and sections where the teacher has an active `TeachingAssignment` (`enforceTeacherNoticeScope`).
+   - Attempting to send notices or notifications to classes or sections outside the teacher's teaching assignment returns `403 RBAC_PERMISSION_DENIED`.
+3. **Admin Template, Scheduled Job, and Delivery Log Authority**:
+   - `SUPER_ADMIN` and `SCHOOL_ADMIN` possess sole authority to manage notification templates (`POST /api/v1/templates`), create scheduled or recurring broadcast jobs (`POST /api/v1/scheduled-notifications`), and retry failed delivery logs (`POST /api/v1/delivery-logs/:id/retry`).
+4. **Notice Audience Filtering**:
+   - `GET /api/v1/notices` automatically filters notices based on the current user's role (`targetRoles` includes user role or `"ALL"`) and class/section membership. Expired notices (`expiryDate < now`) and draft/archived notices are excluded from general user queries.
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

@@ -139,7 +139,7 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 10 — Fee Management & Finance (IN PROGRESS / PLANNING)
+### Phase 10 — Fee Management & Finance (COMPLETED)
 * **Objective**: Design and build comprehensive Fee Management & Finance module covering optional Financial Years (`FinancialYear`), Fee Heads (`FeeHead`), Fee Structures (`FeeStructure`), Discounts & Scholarships (`FeeDiscount`), Late Fee Rules (`LateFeeRule`), 8-state Invoices (`Invoice`), Payments supporting reversals (`Payment`), printable PDF Receipts with reserved verification fields (`Receipt`), immutable Receipt Versions (`ReceiptVersion`), Student Fee Ledger (`StudentFeeLedger`), and Materialized Financial Summary Cache (`FinancialSummary`) without duplicating student or enrollment data.
 * **Dependencies**: Phase 9 (requires `AcademicSession`, `Enrollment`, `Student`, `Class`).
 * **Deliverables**:
@@ -159,22 +159,31 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 11 — Communication: Circulars, Notices & Holiday Calendar
-* **Objective**: Build audience-scoped notices, emergency announcements, and interactive school holiday calendar.
-* **Dependencies**: Phase 2.
-* **Deliverables**: `Notice`, `Event`, `Holiday` models and APIs; Circular publisher modal; Notification bell alert bar.
-* **Acceptance Criteria**: Publishing a circular scoped to `"PARENTS"` makes it visible in Parent Portal but invisible in Teacher Portal.
-* **Tests Required**: Circular audience filtering unit and integration tests.
+### Phase 11 — Communication & Notification System (IN PROGRESS / PLANNING)
+* **Objective**: Design and build a comprehensive, multi-channel Communication & Notification System covering individual user notifications (`Notification`), audience-scoped school notices & circulars (`Notice`), localization-ready dynamic templates (`NotificationTemplate`), delivery telemetry (`DeliveryLog`), user opt-in/opt-out preferences (`NotificationPreference`), and scheduled/recurring broadcast jobs (`ScheduledNotification`) without duplicating ERP data.
+* **Dependencies**: Phase 10 (integrates with Authentication, Attendance, Homework, Examinations, Report Cards, and Fee Management).
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod schemas and TypeScript types for `Notification`, `Notice`, `NotificationTemplate`, `DeliveryLog`, `NotificationPreference`, and `ScheduledNotification`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#57` to `#62`; REST endpoints under `/api/v1/notifications`, `/api/v1/notices`, `/api/v1/templates`, `/api/v1/preferences`, `/api/v1/delivery-logs`, and `/api/v1/scheduled-notifications`; RBAC scoping for Teachers (`enforceTeacherNoticeScope`), Students/Guardians, and Admins.
+  * **ERP Web UI (`apps/web`)**: Notification Center (`/erp/communication/notifications`), Notice Board (`/erp/communication/notices`), Notice Manager (`/erp/communication/notices/manage`), Template Manager (`/erp/communication/templates`), Delivery Dashboard (`/erp/communication/delivery-logs`), Scheduled Notifications (`/erp/communication/scheduled`), and Notification Preferences (`/erp/communication/preferences`).
+* **Acceptance Criteria**:
+  * Notifications and notices consume events from Auth, Attendance, Homework, Exams, Report Cards, and Fees via standardized reference pointers (`referenceId`, `referenceType`) without duplicating domain data.
+  * Single-school architecture is preserved (zero `schoolId` fields across collections).
+  * Templates support Mustache/Handlebars variable interpolation (`{{studentName}}`, `{{dueDate}}`) and preview rendering (`POST /api/v1/templates/:id/preview`).
+  * User preferences enforce opt-in / opt-out controls across 7 categories (`ATTENDANCE`, `HOMEWORK`, `EXAM`, `RESULT`, `FEE`, `GENERAL`, `SYSTEM`) and 3 channels (`IN_APP`, `EMAIL`, `SMS`).
+  * Notice queries automatically filter by user role and class/section membership, excluding expired notices (`expiryDate < now`).
+  * DeliveryLog tracks delivery attempts, retry counts, and failure reasons across channels without external third-party SDK dependencies (local logging/placeholder transport in Phase 11).
+  * Teachers can only broadcast notices or send notifications to students and guardians in their assigned classes/sections.
+* **Tests Required**: Verification suite `TEST-COMM-001` to `TEST-COMM-015` covering template creation, variable interpolation preview, notice draft/publish lifecycle, role & class audience scoping, teacher RBAC assignment scoping, immediate direct notifications, bulk notifications with template interpolation, read badge count tracking, mark-all-read & archiving, user preference opt-out enforcement, scheduled notification queue creation, scheduler execution, job cancellation, delivery log failure retry handling, and self-service RBAC isolation.
 
 ---
 
-### Phase 12 — Communication: Circulars, Notices & Holiday Calendar
-* **Objective**: Build audience-scoped notices, emergency announcements, and interactive school holiday calendar.
-* **Dependencies**: Phase 2.
-* **Deliverables**: `Notice`, `Event`, `Holiday` models and APIs; Circular publisher modal; Notification bell alert bar.
-* **Acceptance Criteria**: Publishing a circular scoped to `"PARENTS"` makes it visible in Parent Portal but invisible in Teacher Portal.
-* **Tests Required**: Circular audience filtering unit and integration tests.
-
+### Phase 12 — Event & Holiday Calendar Management
+* **Objective**: Build interactive school event calendar items (`Event`), institutional holidays (`Holiday`), and campus schedule board.
+* **Dependencies**: Phase 11.
+* **Deliverables**: `Event` and `Holiday` models and APIs; Calendar interactive view; Event RSVP/Visibility scoping.
+* **Acceptance Criteria**: Events and holidays display dynamically on the school calendar and can be scoped as public website events or internal portal events.
+* **Tests Required**: Event creation, holiday overlap checking, and visibility scoping unit/integration tests.
 ---
 
 ### Phase 13 — Public School Website (SEO-Optimized Presentation)

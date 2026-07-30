@@ -1642,24 +1642,149 @@ Materialized financial summary cache for executive dashboards and reports instea
 
 ---
 
-### 3.11. Communication, CMS & Admissions Collections
+### 3.11. Communication & Notification System Collections
 
-#### 57. `Notice`
-Public and portal circulars.
+#### 57. `Notification`
+Individual user notifications generated from ERP event triggers or broadcast notices.
 * **Fields**:
   * `_id`: ObjectId
-  * `title`: String
-  * `content`: String
-  * `targetAudience`: Array<Enum (`"ALL" | "TEACHERS" | "STUDENTS" | "PARENTS"`)>
-  * `targetClassIds`: Array<ObjectId -> `Class`> (Optional scoping)
-  * `attachmentUrl`: String
-  * `isPublicWebsiteNotice`: Boolean (Default `false`)
-  * `publishDate`: Date
-  * `expiryDate`: Date (Optional TTL indexing)
+  * `title`: String (Required, max 150 chars)
+  * `message`: String (Required, max 1000 chars)
+  * `priority`: Enum (`"LOW" | "NORMAL" | "HIGH" | "URGENT"`) (Default `"NORMAL"`)
+  * `category`: Enum (`"ATTENDANCE" | "HOMEWORK" | "EXAM" | "RESULT" | "FEE" | "GENERAL" | "SYSTEM"`) (Required)
+  * `senderId`: ObjectId -> `User` (Optional for system-generated alerts)
+  * `recipientId`: ObjectId -> `User` (Required, indexed)
+  * `readStatus`: Enum (`"READ" | "UNREAD"`) (Default `"UNREAD"`)
+  * `readAt`: Date (Optional)
+  * `isArchived`: Boolean (Default `false`)
+  * `referenceId`: ObjectId (Optional reference to Invoice, Mark, Homework, Attendance, Notice)
+  * `referenceType`: String (`"Invoice"`, `"Homework"`, `"Exam"`, `"Notice"`, `"Attendance"`, optional)
+  * `createdAt`: Date
+  * `updatedAt`: Date
 * **Indexes**:
-  * `{ publishDate: -1, isPublicWebsiteNotice: 1 }`
+  * `{ recipientId: 1, readStatus: 1, createdAt: -1 }`
+  * `{ recipientId: 1, isArchived: 1, createdAt: -1 }`
+  * `{ category: 1, createdAt: -1 }`
 
-#### 58. `Event`
+#### 58. `Notice`
+School notices, circulars, announcements, and events with audience scoping.
+* **Fields**:
+  * `_id`: ObjectId
+  * `title`: String (Required, max 200 chars)
+  * `content`: String (Required)
+  * `type`: Enum (`"SCHOOL_NOTICE" | "CIRCULAR" | "ANNOUNCEMENT" | "EVENT"`) (Required)
+  * `status`: Enum (`"DRAFT" | "PUBLISHED" | "EXPIRED" | "ARCHIVED"`) (Default `"DRAFT"`)
+  * `targetRoles`: Array<Enum (`"SUPER_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT" | "GUARDIAN" | "STAFF" | "ALL"`)> (Required)
+  * `targetAcademicSessionId`: ObjectId -> `AcademicSession` (Optional scoping)
+  * `targetClassIds`: Array<ObjectId -> `Class`> (Optional scoping to specific classes)
+  * `targetSectionIds`: Array<ObjectId -> `Section`> (Optional scoping to specific sections)
+  * `attachments`: Array<{ fileName: String, fileUrl: String, fileSizeBytes: Number, mimeType: String }>
+  * `publishDate`: Date (Required when published)
+  * `expiryDate`: Date (Optional, supports automatic expiration filtering)
+  * `authorId`: ObjectId -> `User` (Required)
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ status: 1, publishDate: -1 }`
+  * `{ targetRoles: 1, status: 1, expiryDate: 1 }`
+  * `{ targetAcademicSessionId: 1, targetClassIds: 1 }`
+
+#### 59. `NotificationTemplate`
+Localization-ready SMS, Email, and In-App message templates with dynamic variable interpolation.
+* **Fields**:
+  * `_id`: ObjectId
+  * `code`: String (Unique uppercase identifier, e.g., `"FEE_DUE_REMINDER"`, `"ATTENDANCE_ABSENT_ALERT"`)
+  * `name`: String (Required descriptive name)
+  * `category`: Enum (`"ATTENDANCE" | "HOMEWORK" | "EXAM" | "RESULT" | "FEE" | "GENERAL" | "SYSTEM"`)
+  * `channels`: Array<Enum (`"IN_APP" | "EMAIL" | "SMS"`)> (Supported delivery channels)
+  * `subjectTemplate`: String (Optional for Email and In-App titles)
+  * `bodyTemplate`: String (Required, supports Mustache/Handlebars variables e.g., `{{studentName}}`, `{{dueDate}}`)
+  * `variables`: Array<String> (List of required variable names)
+  * `locale`: String (Default `"en"`)
+  * `isActive`: Boolean (Default `true`)
+  * `createdBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ code: 1, locale: 1 }` (Unique)
+  * `{ category: 1, isActive: 1 }`
+
+#### 60. `DeliveryLog`
+Audit ledger tracking delivery status, channel, failure reasons, and retries for notifications and notices.
+* **Fields**:
+  * `_id`: ObjectId
+  * `notificationId`: ObjectId -> `Notification` (Optional)
+  * `noticeId`: ObjectId -> `Notice` (Optional)
+  * `recipientId`: ObjectId -> `User` (Required)
+  * `channel`: Enum (`"IN_APP" | "EMAIL" | "SMS"`) (Required)
+  * `status`: Enum (`"PENDING" | "SENT" | "DELIVERED" | "FAILED"`) (Required)
+  * `retryCount`: Number (Default `0`)
+  * `maxRetries`: Number (Default `3`)
+  * `failureReason`: String (Optional error message)
+  * `sentAt`: Date (Optional)
+  * `deliveredAt`: Date (Optional)
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ recipientId: 1, status: 1 }`
+  * `{ status: 1, createdAt: -1 }`
+  * `{ notificationId: 1 }`
+  * `{ noticeId: 1 }`
+
+#### 61. `NotificationPreference`
+User opt-in / opt-out configuration across categories and delivery channels.
+* **Fields**:
+  * `_id`: ObjectId
+  * `userId`: ObjectId -> `User` (Unique required)
+  * `preferences`: Object containing channel toggles per category:
+    * `attendance`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean } (Default all `true`)
+    * `homework`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean }
+    * `exam`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean }
+    * `result`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean }
+    * `fee`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean }
+    * `general`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean }
+    * `system`: { `inApp`: Boolean, `email`: Boolean, `sms`: Boolean }
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ userId: 1 }` (Unique)
+
+#### 62. `ScheduledNotification`
+Queue table for immediate, scheduled, and recurring notifications.
+* **Fields**:
+  * `_id`: ObjectId
+  * `title`: String (Required)
+  * `message`: String (Required)
+  * `category`: Enum (`"ATTENDANCE" | "HOMEWORK" | "EXAM" | "RESULT" | "FEE" | "GENERAL" | "SYSTEM"`)
+  * `priority`: Enum (`"LOW" | "NORMAL" | "HIGH" | "URGENT"`)
+  * `targetType`: Enum (`"ALL" | "ROLE" | "CLASS" | "SECTION" | "INDIVIDUAL"`)
+  * `targetRoles`: Array<String> (Optional)
+  * `targetAcademicSessionId`: ObjectId -> `AcademicSession` (Optional)
+  * `targetClassIds`: Array<ObjectId -> `Class`> (Optional)
+  * `targetSectionIds`: Array<ObjectId -> `Section`> (Optional)
+  * `recipientIds`: Array<ObjectId -> `User`> (Optional)
+  * `templateId`: ObjectId -> `NotificationTemplate` (Optional)
+  * `templateVariables`: Object (Optional key-value map)
+  * `scheduleType`: Enum (`"IMMEDIATE" | "SCHEDULED" | "RECURRING"`)
+  * `scheduledAt`: Date (Required for scheduled jobs)
+  * `cronExpression`: String (Optional for recurring schedules)
+  * `expiryDate`: Date (Optional job expiry)
+  * `status`: Enum (`"PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED" | "FAILED"`) (Default `"PENDING"`)
+  * `totalRecipients`: Number (Default `0`)
+  * `successfulDeliveries`: Number (Default `0`)
+  * `failedDeliveries`: Number (Default `0`)
+  * `createdBy`: ObjectId -> `User` (Required)
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ status: 1, scheduledAt: 1 }`
+  * `{ createdBy: 1, status: 1 }`
+
+---
+
+### 3.12. CMS, Admissions & Audit Log Collections
+
+#### 63. `Event`
 School event calendar items.
 * **Fields**:
   * `_id`: ObjectId
@@ -1673,7 +1798,7 @@ School event calendar items.
 * **Indexes**:
   * `{ eventStartDate: 1 }`
 
-#### 59. `AdmissionEnquiry`
+#### 64. `AdmissionEnquiry`
 Prospective student enquiry leads.
 * **Fields**:
   * `_id`: ObjectId
@@ -1691,7 +1816,7 @@ Prospective student enquiry leads.
 * **Indexes**:
   * `{ status: 1, enquiryDate: -1 }`
 
-#### 60. `GalleryAlbum`
+#### 65. `GalleryAlbum`
 CMS photo gallery album container.
 * **Fields**:
   * `_id`: ObjectId
@@ -1702,7 +1827,7 @@ CMS photo gallery album container.
 * **Indexes**:
   * `{ isPublished: 1 }`
 
-#### 61. `GalleryImage`
+#### 66. `GalleryImage`
 Individual photos within a GalleryAlbum.
 * **Fields**:
   * `_id`: ObjectId
@@ -1713,7 +1838,7 @@ Individual photos within a GalleryAlbum.
 * **Indexes**:
   * `{ albumId: 1, order: 1 }`
 
-#### 62. `Document`
+#### 67. `Document`
 Secure repository for private student/teacher documents.
 * **Fields**:
   * `_id`: ObjectId
@@ -1728,7 +1853,7 @@ Secure repository for private student/teacher documents.
 * **Indexes**:
   * `{ ownerType: 1, ownerId: 1, documentType: 1 }`
 
-#### 63. `AuditLog`
+#### 68. `AuditLog`
 Immutable security and administrative audit ledger.
 * **Fields**:
   * `_id`: ObjectId

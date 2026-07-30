@@ -233,3 +233,44 @@ The Curriculum, Timetable, and Academic Calendar test suite guarantees database 
     * Create reusable `RubricTemplate` with `isShared: true` -> Asserts other teachers assigned to the same `subjectId` can reference `rubricTemplateId` during evaluation.
 16. **Study Material Release & Expiration Windows (`TEST-HOMEWORK-016`)**:
     * Create study material with `publishAt` and `expireAt` -> Asserts student access is allowed only during the active window (`now >= publishAt` and `now <= expireAt`).
+
+---
+
+### 3.10. Examination, Assessment & Marks Management Verification Suite (`TEST-EXAM-001` through `TEST-EXAM-018` — Phase 8)
+
+1. **Create Examination (`TEST-EXAM-001`)**:
+   * Admin creates an examination (`POST /api/v1/exams`) with valid `academicSessionId` and `academicTermId` -> Asserts default status is `DRAFT`.
+2. **Schedule Exam Slot (`TEST-EXAM-002`)**:
+   * Admin schedules an `ExamSchedule` slot for a valid `ClassSubject`, `Room`, and `Invigilator` -> Asserts successful creation (`status: "SCHEDULED"`).
+3. **Student Schedule Overlap Conflict (`TEST-EXAM-003`)**:
+   * Admin attempts to schedule a second `ExamSchedule` slot overlapping in date and time for the same `classId`/`sectionId` -> Asserts `409 CONFLICT`.
+4. **Invigilator Overlap Conflict (`TEST-EXAM-004`)**:
+   * Admin attempts to assign the same `invigilatorId` (`Teacher`) to two overlapping exam slots on the same date and time -> Asserts `409 CONFLICT`.
+5. **Assessment Component Breakdown (`TEST-EXAM-005`)**:
+   * Configure assessment components for an exam subject (`THEORY: 70`, `PRACTICAL: 30`, weightages sum to 100%) -> Asserts component validation succeeds.
+6. **Teacher Draft Marks Entry (`TEST-EXAM-006`)**:
+   * Teacher enters draft marks (`POST /api/v1/marks/bulk`) for an active `TeachingAssignment` -> Asserts percentage and letter grade are resolved correctly from active `GradeScale`.
+7. **Teacher RBAC Scope Enforcement (`TEST-EXAM-007`)**:
+   * Teacher attempts to enter marks for an unassigned `ClassSubject` or `Section` -> Asserts `403 RBAC_PERMISSION_DENIED`.
+8. **Duplicate Marks Prevention (`TEST-EXAM-008`)**:
+   * Teacher attempts to enter duplicate marks for the same `examId`, `classSubjectId`, and `enrollmentId` -> Asserts system updates existing draft or returns `409 CONFLICT` if already submitted.
+9. **Marks Submission & Teacher Lock (`TEST-EXAM-009`)**:
+   * Teacher submits marks (`POST /api/v1/marks/submit`) -> Asserts status transitions to `SUBMITTED` and subsequent teacher edit attempts return `403` / `409`.
+10. **Admin Marks Locking (`TEST-EXAM-010`)**:
+    * Admin locks submitted marks (`PATCH /api/v1/marks/lock`) -> Asserts status transitions to `LOCKED` and prevents unauthorized modification.
+11. **Grace Marks Awarding (`TEST-EXAM-011`)**:
+    * Admin applies grace marks rule (`PATCH /api/v1/marks/:id/grace`) -> Asserts grace marks are recorded, total marks obtained update, and audit remark is logged.
+12. **Automated Result Calculation Engine (`TEST-EXAM-012`)**:
+    * Admin triggers automated result processing (`POST /api/v1/results/calculate`) -> Asserts `Result` documents are generated with correct subject totals, overall percentage, GPA, pass/fail status, and class/section rank.
+13. **Student Query Before Publication (`TEST-EXAM-013`)**:
+    * Student attempts to query `GET /api/v1/results/my` while `Result.status` is `CALCULATED` or `LOCKED` -> Asserts `403 RBAC_PERMISSION_DENIED` or empty result set.
+14. **Result Publication & Student View (`TEST-EXAM-014`)**:
+    * Admin publishes results (`PATCH /api/v1/results/publish`) -> Asserts student successfully queries own published results (`GET /api/v1/results/my`).
+15. **Re-evaluation Request Submission (`TEST-EXAM-015`)**:
+    * Student/Guardian submits formal `ReEvaluationRequest` (`requestType: "RE_EVALUATION"`) with valid reason -> Asserts request status is `SUBMITTED`.
+16. **Re-evaluation Approval & Revision Audit Trail (`TEST-EXAM-016`)**:
+    * Admin approves request and evaluator teacher revises marks -> Asserts immutable audit trail is appended to `ReEvaluationRequest.auditTrail`, marks entry is updated, and status transitions to `COMPLETED`.
+17. **Materialized Exam Analytics Cache (`TEST-EXAM-017`)**:
+    * Admin queries `GET /api/v1/results/analytics/summary` -> Asserts subject averages, pass percentage, grade distribution, and top performers are returned from `ExamAnalyticsSummary` materialized cache.
+18. **Soft-Archive Examination Entities (`TEST-EXAM-018`)**:
+    * Soft-archive an `Exam`, `ExamSchedule`, `MarksEntry`, `GradeScale`, and `Result` (`PATCH /:id/archive`) -> Asserts status transitions to `ARCHIVED` and entities are excluded from active list queries.

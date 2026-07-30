@@ -43,6 +43,14 @@ import {
   StudyMaterialPage,
   RubricLibraryPage,
 } from '../modules/homework';
+import {
+  ExamDashboardPage,
+  ExamSchedulePage,
+  MarksEntryPage,
+  ResultsPage,
+  StudentResultPage,
+  ReEvaluationPage,
+} from '../modules/exams';
 
 const router = createBrowserRouter([
   {
@@ -172,6 +180,31 @@ const router = createBrowserRouter([
       {
         path: 'homework/rubrics',
         element: <RubricLibraryPage />,
+      },
+      // Phase 8: Examination, Assessment & Marks Management
+      {
+        path: 'exams/dashboard',
+        element: <ExamDashboardPage />,
+      },
+      {
+        path: 'exams/schedule',
+        element: <ExamSchedulePage />,
+      },
+      {
+        path: 'exams/marks-entry',
+        element: <MarksEntryPage />,
+      },
+      {
+        path: 'exams/results',
+        element: <ResultsPage />,
+      },
+      {
+        path: 'exams/my-results',
+        element: <StudentResultPage />,
+      },
+      {
+        path: 'exams/re-evaluations',
+        element: <ReEvaluationPage />,
       },
     ],
   },

@@ -929,71 +929,250 @@ Similar to Attendance Analytics, Homework Analytics uses a **Materialized Summar
 
 ---
 
-### 3.8. Examination & Evaluation Collections (Future Phases)
+### 3.8. Examination, Assessment & Marks Management Collections (Phase 8)
 
 #### 34. `Exam`
-Top-level examination definition.
+Top-level examination definition scoped to an academic session and term.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
-  * `name`: String (e.g., `"Mid-Term Examination 2026"`, `"Annual Exam"`)
+  * `name`: String (Required, Indexed, e.g., `"Mid-Term Examination 2026-27"`, `"Final Examination"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Required, Indexed)
+  * `examType`: Enum (`"UNIT_TEST" | "MID_TERM" | "FINAL" | "PRACTICAL" | "QUIZ" | "MOCK"`)
+  * `status`: Enum (`"DRAFT" | "SCHEDULED" | "PUBLISHED" | "COMPLETED" | "ARCHIVED"`, Default `"DRAFT"`)
   * `startDate`: Date
   * `endDate`: Date
-  * `isPublished`: Boolean (Default `false`)
-  * `resultPublishedAt`: Date
+  * `description`: String (Optional)
+  * `instructions`: String (Optional)
+  * `publishedAt`: Date (Optional)
+  * `publishedBy`: ObjectId -> `User` (Optional)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+  * `archivedAt`: Date
+  * `archivedBy`: ObjectId -> `User`
 * **Indexes**:
-  * `{ schoolId: 1, academicSessionId: 1, name: 1 }`
+  * `{ academicSessionId: 1, academicTermId: 1, status: 1 }`
+  * `{ name: 1, academicSessionId: 1 }` (Unique among non-archived exams)
 
-#### 34. `ExamSubject`
-Configured maximum and passing marks for a subject in an exam.
+#### 35. `ExamSchedule`
+Examination timetable schedule slots per class/section with conflict detection.
 * **Fields**:
   * `_id`: ObjectId
-  * `examId`: ObjectId -> `Exam` (Indexed)
-  * `classId`: ObjectId -> `Class` (Indexed)
-  * `subjectId`: ObjectId -> `Subject` (Indexed)
-  * `examDate`: Date
-  * `maxMarks`: Number (e.g., `100`)
-  * `passingMarks`: Number (e.g., `33`)
-  * `weightagePercentage`: Number (Default `100`)
-* **Indexes**:
-  * `{ examId: 1, classId: 1, subjectId: 1 }` (Unique)
+  * `examId`: ObjectId -> `Exam` (Required, Indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Required, Indexed)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Required, Indexed)
+  * `classId`: ObjectId -> `Class` (Required, Indexed)
+  * `sectionId`: ObjectId -> `Section` (Optional, Indexed — if null, applies to all sections of class)
+  * `subjectId`: ObjectId -> `Subject` (Required, Indexed)
+  * `date`: Date (Required, Indexed)
+  * `startTime`: String (`"HH:mm"`, Required, e.g., `"09:00"`)
+  * `endTime`: String (`"HH:mm"`, Required, e.g., `"12:00"`)
+  * `durationMinutes`: Number (Required)
+  * `roomId`: ObjectId -> `Room` (Optional)
+  * `room`: String (Optional room display name)
+  * `invigilatorId`: ObjectId -> `Teacher` (Optional)
+  * `maximumMarks`: Number (Required, Default 100)
+  * `passingMarks`: Number (Required, Default 33)
+  * `status`: Enum (`"SCHEDULED" | "RESCHEDULED" | "CANCELLED" | "COMPLETED" | "ARCHIVED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes & Conflict Detection Rules**:
+  * `{ examId: 1, classId: 1, sectionId: 1, subjectId: 1 }`
+  * **Room Overlap Conflict**: Prevents assigning the same `roomId` to overlapping slots on the same `date`.
+  * **Invigilator Overlap Conflict**: Prevents assigning the same `invigilatorId` to overlapping slots on the same `date`.
+  * **Student Schedule Overlap Conflict**: Prevents scheduling overlapping exam slots for the same `classId` / `sectionId` on the same `date`.
 
-#### 35. `Mark`
-Individual student score in an ExamSubject.
+#### 36. `AssessmentComponent`
+Granular assessment breakdown components (Theory, Practical, Project, Oral, Internal) for a subject in an exam.
 * **Fields**:
   * `_id`: ObjectId
-  * `examSubjectId`: ObjectId -> `ExamSubject` (Indexed)
-  * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
-  * `studentId`: ObjectId -> `Student`
-  * `marksObtained`: Number
-  * `isAbsent`: Boolean (Default `false`)
-  * `grade`: String (Calculated automatically via GradeRule, e.g., `"A+"`, `"B"`)
-  * `enteredByTeacherId`: ObjectId -> `Teacher`
-  * `isLocked`: Boolean (Default `false` — locked after approval)
+  * `examId`: ObjectId -> `Exam` (Required, Indexed)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Required, Indexed)
+  * `componentName`: String (`"THEORY" | "PRACTICAL" | "PROJECT" | "ORAL" | "ASSIGNMENT" | "INTERNAL" | "OTHER"`)
+  * `weightage`: Number (0-100%, total sum across subject components = 100)
+  * `maximumMarks`: Number (Positive, Required, e.g., 70 for Theory, 30 for Practical)
+  * `passingMarks`: Number (Positive, Required, e.g., 23 for Theory, 10 for Practical)
+  * `isMandatoryToPass`: Boolean (Default `true` — whether failure in this component fails the subject)
+  * `orderSequence`: Number (Default 0)
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
 * **Indexes**:
-  * `{ examSubjectId: 1, enrollmentId: 1 }` (Unique)
+  * `{ examId: 1, classSubjectId: 1, status: 1 }`
 
-#### 36. `GradeRule`
-Configurable grading scale per session/school.
+#### 37. `MarksEntry`
+Student marks entry record for a `ClassSubject` in an `Exam`.
+* **ARCHITECTURAL DEPENDENCY CONTRACT**: Marks depend strictly on `AcademicSession` -> `AcademicTerm` -> `ClassSubject` -> `TeachingAssignment` -> `Enrollment`. Does NOT duplicate any academic mapping.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession`
-  * `gradeLetter`: String (e.g., `"A+"`, `"A"`, `"B"`, `"F"`)
-  * `minPercentage`: Number (e.g., `90`)
-  * `maxPercentage`: Number (e.g., `100`)
-  * `gradePoint`: Number (e.g., `10.0`)
-  * `description`: String (`"Outstanding"`, `"Fail"`)
+  * `examId`: ObjectId -> `Exam` (Required, Indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Required, Indexed)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Required, Indexed)
+  * `teachingAssignmentId`: ObjectId -> `TeachingAssignment` (Required, Indexed — verifies teacher authority)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, Indexed)
+  * `studentId`: ObjectId -> `Student` (Required, Indexed)
+  * `componentMarks`: Array of embedded objects:
+    * `assessmentComponentId`: ObjectId -> `AssessmentComponent`
+    * `componentName`: String
+    * `marksObtained`: Number (0 <= marksObtained <= component maximumMarks)
+    * `isAbsent`: Boolean (Default `false`)
+    * `isMedical`: Boolean (Default `false`)
+    * `isExempt`: Boolean (Default `false`)
+  * `totalMarksObtained`: Number (Sum of component marks obtained)
+  * `maximumMarksTotal`: Number (Sum of component maximum marks)
+  * `percentage`: Number (`(totalMarksObtained / maximumMarksTotal) * 100`)
+  * `grade`: String (Resolved automatically from active `GradeScale`)
+  * `gradePoint`: Number
+  * `isAbsent`: Boolean (True if absent in all mandatory components)
+  * `isMedical`: Boolean
+  * `isExempt`: Boolean
+  * `graceMarksAwarded`: Number (Default 0)
+  * `remarks`: String (Optional teacher comment)
+  * `status`: Enum (`"DRAFT" | "SUBMITTED" | "LOCKED" | "PUBLISHED" | "ARCHIVED"`)
+  * `submittedAt`: Date
+  * `submittedBy`: ObjectId -> `User`
+  * `lockedAt`: Date
+  * `lockedBy`: ObjectId -> `User`
+  * `publishedAt`: Date
+  * `publishedBy`: ObjectId -> `User`
+  * `history`: Array of embedded audit records (`{ modifiedBy, modifiedAt, previousTotal, newTotal, reason, status }`)
 * **Indexes**:
-  * `{ schoolId: 1, academicSessionId: 1, gradeLetter: 1 }` (Unique)
+  * `{ examId: 1, enrollmentId: 1, classSubjectId: 1 }` (Unique among non-archived entries)
+  * `{ examId: 1, teachingAssignmentId: 1, status: 1 }`
 
-#### 37. `ReportCard`
-Compiled end-of-term student result sheet.
+#### 38. `GradeScale`
+Configurable grading scale mapping percentage ranges to letter grades and grade points.
 * **Fields**:
   * `_id`: ObjectId
-  * `schoolId`: String
-  * `academicSessionId`: ObjectId -> `AcademicSession`
+  * `name`: String (Required, e.g., `"Standard CBSE 10-Point Scale"`, `"Primary Letter Scale"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `classIds`: Array of ObjectId -> `Class` (Optional; empty implies school-wide default for session)
+  * `isDefault`: Boolean (Default `false`)
+  * `scaleType`: Enum (`"PERCENTAGE" | "ABSOLUTE" | "GPA" | "CUSTOM"`)
+  * `grades`: Array of embedded grade interval objects:
+    * `grade`: String (e.g., `"A1"`, `"A2"`, `"B1"`, `"B2"`, `"C1"`, `"C2"`, `"D"`, `"E1"`, `"E2"`)
+    * `gradePoint`: Number (e.g., 10.0, 9.0, 8.0...)
+    * `minPercentage`: Number (0-100)
+    * `maxPercentage`: Number (0-100)
+    * `description`: String (e.g., `"Outstanding"`, `"Needs Improvement"`)
+    * `isPassing`: Boolean
+  * `status`: Enum (`"ACTIVE" | "ARCHIVED"`)
+* **Indexes**:
+  * `{ academicSessionId: 1, isDefault: 1, status: 1 }`
+
+#### 39. `Result`
+Consolidated student examination result across all enrolled subjects.
+* **Fields**:
+  * `_id`: ObjectId
+  * `examId`: ObjectId -> `Exam` (Required, Indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Required, Indexed)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, Indexed)
+  * `studentId`: ObjectId -> `Student` (Required, Indexed)
+  * `classId`: ObjectId -> `Class` (Required, Indexed)
+  * `sectionId`: ObjectId -> `Section` (Required, Indexed)
+  * `subjectResults`: Array of embedded subject result objects:
+    * `classSubjectId`: ObjectId -> `ClassSubject`
+    * `subjectId`: ObjectId -> `Subject`
+    * `subjectName`: String
+    * `subjectCode`: String
+    * `marksEntryId`: ObjectId -> `MarksEntry`
+    * `totalMarksObtained`: Number
+    * `maximumMarks`: Number
+    * `passingMarks`: Number
+    * `percentage`: Number
+    * `grade`: String
+    * `gradePoint`: Number
+    * `isPassed`: Boolean
+    * `isAbsent`: Boolean
+    * `isExempt`: Boolean
+    * `graceMarks`: Number
+  * `overallTotalObtained`: Number (Sum of subject totals obtained, excluding exempt subjects)
+  * `overallMaximumMarks`: Number (Sum of subject max marks)
+  * `overallPercentage`: Number
+  * `overallGrade`: String
+  * `overallGradePoint`: Number (CGPA / GPA)
+  * `rankInClass`: Number
+  * `rankInSection`: Number
+  * `resultStatus`: Enum (`"PASS" | "FAIL" | "COMPARTMENT" | "WITHHELD" | "EXEMPT"`)
+  * `graceRulesApplied`: Array of embedded grace records (`{ subjectId, graceMarksAwarded, ruleReason }`)
+  * `status`: Enum (`"DRAFT" | "CALCULATED" | "LOCKED" | "PUBLISHED" | "ARCHIVED"`)
+  * `calculatedAt`: Date
+  * `calculatedBy`: ObjectId -> `User`
+  * `publishedAt`: Date
+  * `publishedBy`: ObjectId -> `User`
+* **Indexes**:
+  * `{ examId: 1, enrollmentId: 1 }` (Unique among non-archived results)
+  * `{ examId: 1, classId: 1, sectionId: 1, rankInClass: 1 }`
+
+#### 40. `ReEvaluationRequest`
+Formal re-evaluation, recounting, or answer script scrutiny request workflow.
+* **Fields**:
+  * `_id`: ObjectId
+  * `examId`: ObjectId -> `Exam` (Required, Indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `academicTermId`: ObjectId -> `AcademicTerm` (Required, Indexed)
+  * `marksEntryId`: ObjectId -> `MarksEntry` (Required, Indexed)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, Indexed)
+  * `studentId`: ObjectId -> `Student` (Required, Indexed)
+  * `classSubjectId`: ObjectId -> `ClassSubject` (Required, Indexed)
+  * `requestType`: Enum (`"RE_COUNTING" | "RE_EVALUATION" | "ANSWER_SCRIPT_VIEW"`)
+  * `reason`: String (Required)
+  * `previousMarks`: Number
+  * `previousGrade`: String
+  * `revisedMarks`: Number (Optional)
+  * `revisedGrade`: String (Optional)
+  * `marksChanged`: Boolean (Default `false`)
+  * `status`: Enum (`"SUBMITTED" | "UNDER_REVIEW" | "APPROVED_FOR_EVALUATION" | "COMPLETED" | "REJECTED" | "ARCHIVED"`)
+  * `reviewedBy`: ObjectId -> `User`
+  * `reviewedAt`: Date
+  * `evaluatorTeacherId`: ObjectId -> `Teacher`
+  * `evaluationRemarks`: String
+  * `completedAt`: Date
+  * `auditTrail`: Array of embedded audit objects (`{ action, timestamp, userId, previousMarks, newMarks, comment }`)
+* **Indexes**:
+  * `{ examId: 1, studentId: 1, status: 1 }`
+  * `{ marksEntryId: 1, requestType: 1 }`
+
+#### 41. `ExamAnalyticsSummary` (Materialized Summary Cache)
+Materialized pre-aggregated examination analytics cache keyed by session, exam, class, section, subject, and teacher.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, Indexed)
+  * `examId`: ObjectId -> `Exam` (Required, Indexed)
+  * `classId`: ObjectId -> `Class` (Required, Indexed)
+  * `sectionId`: ObjectId -> `Section` (Optional, Indexed)
+  * `subjectId`: ObjectId -> `Subject` (Optional, Indexed)
+  * `teacherId`: ObjectId -> `Teacher` (Optional, Indexed)
+  * `totalStudents`: Number
+  * `totalPassed`: Number
+  * `totalFailed`: Number
+  * `totalCompartment`: Number
+  * `totalAbsent`: Number
+  * `passPercentage`: Number
+  * `averagePercentage`: Number
+  * `averageMarks`: Number
+  * `highestMarks`: Number
+  * `lowestMarks`: Number
+  * `gradeDistribution`: Object (`{ "A1": count, "A2": count, ... }`)
+  * `topPerformers`: Array of embedded objects (`{ enrollmentId, studentId, studentName, rollNumber, totalObtained, percentage, rank }`)
+  * `lastCalculatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1, examId: 1, classId: 1, sectionId: 1, subjectId: 1, teacherId: 1 }` (Unique cache key)
+
+---
+
+### 3.9. Report Cards & Academic Transcripts Collections (Phase 9)
+
+#### 42. `ReportCard`
+Compiled end-of-term printable student report card.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Indexed)
   * `examId`: ObjectId -> `Exam` (Indexed)
   * `enrollmentId`: ObjectId -> `Enrollment` (Indexed)
   * `studentId`: ObjectId -> `Student`
@@ -1009,7 +1188,6 @@ Compiled end-of-term student result sheet.
   * `pdfReportUrl`: String
 * **Indexes**:
   * `{ examId: 1, enrollmentId: 1 }` (Unique)
-  * `{ schoolId: 1, academicSessionId: 1, classRank: 1 }`
 
 ---
 

@@ -25,6 +25,13 @@ import leaveRoutes from './leaves.routes';
 import homeworkRoutes from './homework.routes';
 import rubricRoutes from './rubric.routes';
 import studyMaterialRoutes from './studyMaterial.routes';
+import examRoutes from './exam.routes';
+import examScheduleRoutes from './examSchedule.routes';
+import assessmentComponentRoutes from './assessmentComponent.routes';
+import marksRoutes from './marks.routes';
+import gradeScaleRoutes from './gradeScale.routes';
+import resultRoutes from './result.routes';
+import reEvaluationRoutes from './reEvaluation.routes';
 
 const router = Router();
 
@@ -68,6 +75,15 @@ router.use('/leaves', leaveRoutes);
 router.use('/homework', homeworkRoutes);
 router.use('/rubrics', rubricRoutes);
 router.use('/study-material', studyMaterialRoutes);
+
+// Phase 8: Mount Examination, Assessment & Marks Management endpoints
+router.use('/exams', examRoutes);
+router.use('/exam-schedules', examScheduleRoutes);
+router.use('/assessment-components', assessmentComponentRoutes);
+router.use('/marks', marksRoutes);
+router.use('/grade-scales', gradeScaleRoutes);
+router.use('/results', resultRoutes);
+router.use('/re-evaluations', reEvaluationRoutes);
 
 export default router;
 

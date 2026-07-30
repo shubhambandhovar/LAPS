@@ -110,6 +110,19 @@ When a Teacher, Student, or Admin interacts with homework assignments, student s
 3. **Admin Unrestricted Access**:
    * `SUPER_ADMIN` and `SCHOOL_ADMIN` possess institutional override capabilities to inspect, edit, archive, and audit all homework assignments, student submissions, teacher evaluations, rubric templates, and study materials across all classes and teachers.
 
+### 3.7. Examination, Assessment & Marks Management Scoping (`EXAM_MARKS_SCOPE` — Phase 8)
+When a Teacher, Student, Guardian, or Admin interacts with examinations, exam schedules, assessment components, marks entries, grade scales, result processing, or re-evaluation workflows:
+1. **Teacher Marks Entry & Assessment Scope**:
+   * A Teacher can enter, bulk save, and submit student marks (`POST /api/v1/marks/bulk`, `POST /api/v1/marks/submit`) ONLY for `ClassSubjects` where they hold an active `TeachingAssignment` (`TEACHER -> AcademicSession -> Class -> Section -> Subject`).
+   * A Teacher cannot modify marks once the record transitions to `"LOCKED"` or `"PUBLISHED"`. Any revision after locking requires formal Admin reopening or an approved `ReEvaluationRequest`.
+   * A Teacher can view exam schedules, assessment components, and marks entries ONLY for their assigned classes and sections.
+2. **Student & Guardian Result Access Scope**:
+   * A Student or Guardian can view examination results (`GET /api/v1/results/my`) ONLY for their own active `Enrollment` (or ward's enrollment) AND ONLY after the result is explicitly published (`status === "PUBLISHED"`).
+   * Attempting to query draft/calculated/locked results or another student's results returns `403 RBAC_PERMISSION_DENIED`.
+   * A Student or Guardian can submit a formal re-evaluation request (`POST /api/v1/re-evaluations`) only for their own published marks.
+3. **Admin Unrestricted Access & Calculation Authority**:
+   * `SUPER_ADMIN` and `SCHOOL_ADMIN` possess institutional override to create examinations, configure schedules with real-time conflict detection, trigger automated result processing (`POST /api/v1/results/calculate`), lock marks, publish results, apply grace marks rules, and manage re-evaluation workflows across all classes and teachers.
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

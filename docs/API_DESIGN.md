@@ -293,16 +293,59 @@ Standard collection endpoints accept uniform URL query parameters:
 * **Homework & Study Material Analytics (`/api/v1/homework/analytics/summary`)**:
   * `GET  /api/v1/homework/analytics/summary`: Retrieve aggregate homework analytics including `submission percentage`, `pending percentage`, `late percentage`, `average marks`, `class summary`, and `teacher summary`. Uses a Materialized Summary Cache (`HomeworkSummaryCache` keyed by `(academicSessionId, teacherId, classId, subjectId, month, year)`) to support high-scale real-time reporting.
 
-### 5.9. Examinations, Marks & Report Cards (`/api/v1/exams`)
-* `GET  /api/v1/exams`: List examination schedules for the current session.
-* `POST /api/v1/exams`: Create an examination (`Mid-Term 2026`, `Annual Examination`).
-* `POST /api/v1/exams/:examId/subjects`: Configure maximum marks and passing marks for an exam subject.
-* `GET  /api/v1/exams/:examId/marks-sheet`: Get marks entry sheet for a subject/section.
-* `POST /api/v1/exams/:examId/marks`: Batch save/update marks (scoped to authorized subject teacher).
-* `POST /api/v1/exams/:examId/compile-results`: System calculates overall grades and ranks for a class.
-* `GET  /api/v1/exams/:examId/report-cards/:studentId`: Retrieve compiled Report Card JSON and PDF download link.
+### 5.9. Examination, Assessment & Marks Management (`/api/v1/exams`, `/api/v1/exam-schedules`, `/api/v1/marks`, `/api/v1/results`, `/api/v1/grade-scales`, `/api/v1/re-evaluations` — Phase 8)
+* **Academic Dependency Contract**: Marks depend strictly on `AcademicSession` -> `AcademicTerm` -> `ClassSubject` -> `TeachingAssignment` -> `Enrollment`. Endpoints do not duplicate any academic mapping and strictly verify teacher scope against active `TeachingAssignment` records.
+* **Examination Management (`/api/v1/exams`)**:
+  * `GET    /api/v1/exams`: List examinations filtered by `academicSessionId`, `academicTermId`, `examType`, `status`, and `search`.
+  * `GET    /api/v1/exams/:id`: Retrieve single examination with summary metrics.
+  * `POST   /api/v1/exams`: Create a new examination (`status: "DRAFT"`).
+  * `PUT    /api/v1/exams/:id`: Update examination details.
+  * `PATCH  /api/v1/exams/:id/publish`: Publish examination (`status: "PUBLISHED"`).
+  * `PATCH  /api/v1/exams/:id/lock`: Lock examination (`status: "COMPLETED"`).
+  * `PATCH  /api/v1/exams/:id/archive`: Soft-archive examination (`status: "ARCHIVED"`).
+* **Exam Schedule & Conflict Detection (`/api/v1/exam-schedules`)**:
+  * `GET    /api/v1/exam-schedules`: List schedule slots filtered by `examId`, `classId`, `sectionId`, `subjectId`, and `date`.
+  * `GET    /api/v1/exam-schedules/:id`: Retrieve single exam schedule slot.
+  * `POST   /api/v1/exam-schedules`: Create single or bulk schedule slots with mandatory real-time conflict detection (room overlap, invigilator overlap, and student class/section overlap). Returns `409 CONFLICT` if overlap detected.
+  * `PUT    /api/v1/exam-schedules/:id`: Reschedule or update schedule slot.
+  * `PATCH  /api/v1/exam-schedules/:id/archive`: Soft-archive schedule slot (`status: "ARCHIVED"`).
+* **Marks Entry & Locking (`/api/v1/marks`)**:
+  * `GET    /api/v1/marks`: List student marks entries filtered by `examId`, `classSubjectId`, `teachingAssignmentId`, `enrollmentId`, and `status`.
+  * `GET    /api/v1/marks/:id`: Retrieve single marks record with assessment component breakdown and revision audit history.
+  * `POST   /api/v1/marks/bulk`: Bulk enter/save draft marks (`status: "DRAFT"`) for an `examId + teachingAssignmentId`. Strictly validates teacher authorization against `TeachingAssignment`.
+  * `POST   /api/v1/marks/submit`: Teacher submits marks (`status: "SUBMITTED"`); prevents further edits by teacher.
+  * `PATCH  /api/v1/marks/lock`: Admin locks submitted marks (`status: "LOCKED"`).
+  * `PATCH  /api/v1/marks/publish`: Admin publishes locked marks (`status: "PUBLISHED"`).
+  * `PATCH  /api/v1/marks/:id/grace`: Admin applies grace marks rule with audit remark.
+  * `PATCH  /api/v1/marks/:id/archive`: Soft-archive marks entry.
+* **Result Processing & Analytics (`/api/v1/results`)**:
+  * `GET    /api/v1/results`: List compiled exam results filtered by `examId`, `classId`, `sectionId`, `enrollmentId`, and `resultStatus`.
+  * `GET    /api/v1/results/my`: Student/Guardian views their own published exam results (`status: "PUBLISHED"`).
+  * `GET    /api/v1/results/:id`: Retrieve single compiled result sheet.
+  * `POST   /api/v1/results/calculate`: Admin triggers automated calculation, grade resolution, CGPA/GPA, and ranking engine for an `examId + classId`.
+  * `PATCH  /api/v1/results/publish`: Admin publishes calculated results (`status: "PUBLISHED"`).
+  * `PATCH  /api/v1/results/:id/archive`: Soft-archive result.
+  * `GET    /api/v1/results/analytics/summary`: Retrieve aggregate exam analytics from materialized cache (`ExamAnalyticsSummary`).
+* **Grade Scales (`/api/v1/grade-scales`)**:
+  * `GET    /api/v1/grade-scales`: List configured grade scales for an academic session.
+  * `GET    /api/v1/grade-scales/:id`: Retrieve single grade scale.
+  * `POST   /api/v1/grade-scales`: Create a custom or default percentage/ABSOLUTE/GPA grade scale.
+  * `PUT    /api/v1/grade-scales/:id`: Update grade scale intervals.
+  * `PATCH  /api/v1/grade-scales/:id/archive`: Soft-archive grade scale.
+* **Re-evaluation Workflow (`/api/v1/re-evaluations`)**:
+  * `GET    /api/v1/re-evaluations`: List re-evaluation requests filtered by `examId`, `studentId`, `requestType`, and `status`.
+  * `GET    /api/v1/re-evaluations/:id`: Retrieve single re-evaluation request with full audit trail.
+  * `POST   /api/v1/re-evaluations`: Student/Guardian submits formal re-evaluation request (`status: "SUBMITTED"`).
+  * `PATCH  /api/v1/re-evaluations/:id/review`: Admin approves or rejects request (`status: "APPROVED_FOR_EVALUATION" | "REJECTED"`).
+  * `PATCH  /api/v1/re-evaluations/:id/complete`: Assigned teacher re-evaluates, updates marks, and records immutable audit trail (`status: "COMPLETED"`).
+  * `PATCH  /api/v1/re-evaluations/:id/archive`: Soft-archive request.
 
-### 5.10. Fee Management & Accounting (`/api/v1/fees`)
+### 5.10. Report Cards & Academic Transcripts (`/api/v1/report-cards` — Phase 9)
+* `GET  /api/v1/report-cards`: List compiled report cards for an academic session/term.
+* `POST /api/v1/report-cards/compile`: Trigger automated end-of-term report card compilation.
+* `GET  /api/v1/report-cards/:id/pdf`: Retrieve PDF download link for printable report card.
+
+### 5.11. Fee Management & Accounting (`/api/v1/fees`)
 * `GET  /api/v1/fees/structures`: List configured fee structures per class/session.
 * `POST /api/v1/fees/structures`: Create fee structure item.
 * `GET  /api/v1/fees/student/:studentId`: Retrieve student fee dues, discounts, and payment history.
@@ -310,17 +353,17 @@ Standard collection endpoints accept uniform URL query parameters:
 * `GET  /api/v1/fees/receipts/:receiptNumber`: Download/view official fee receipt PDF.
 * `GET  /api/v1/fees/defaulters`: Admin report of students with overdue pending fee balances.
 
-### 5.11. Communication & Public CMS (`/api/v1/communication`, `/api/v1/cms`)
+### 5.12. Communication & Public CMS (`/api/v1/communication`, `/api/v1/cms`)
 * `GET  /api/v1/communication/notices`: List circulars and notices scoped to user audience.
 * `POST /api/v1/communication/notices`: Admin create and publish circular.
 * `GET  /api/v1/cms/gallery/albums`: Public/Admin view photo gallery albums.
 * `POST /api/v1/cms/gallery/albums`: Admin create gallery album and upload images.
 * `PATCH /api/v1/cms/homepage`: Update homepage hero banners, announcement ticker, and principal message.
 
-### 5.12. Admission Enquiries (`/api/v1/admissions`)
+### 5.13. Admission Enquiries (`/api/v1/admissions`)
 * `POST /api/v1/admissions/enquiries`: Public website endpoint to submit online admission inquiry.
 * `GET  /api/v1/admissions/enquiries`: Admin/Receptionist paginated Kanban view of enquiries.
 * `PATCH /api/v1/admissions/enquiries/:id/status`: Update inquiry pipeline status and append follow-up notes.
 
-### 5.13. Audit System & Security Logs (`/api/v1/audit-logs`)
+### 5.14. Audit System & Security Logs (`/api/v1/audit-logs`)
 * `GET  /api/v1/audit-logs`: Super Admin search across immutable audit logs (filterable by actor, action code, date range, entity).

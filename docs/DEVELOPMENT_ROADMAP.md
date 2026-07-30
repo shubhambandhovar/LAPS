@@ -88,7 +88,7 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 7 — Homework, Assignments & Study Material (IN PROGRESS / DESIGN)
+### Phase 7 — Homework, Assignments & Study Material (COMPLETED)
 * **Objective**: Build Homework assignment creation with `SCHEDULED` release, multi-attempt submission tracking (`maxAttempts`), extended attachment metadata (storing URLs only), automatic arrival delay/late calculation, reserved `plagiarismStatus` field, teacher grading with reusable `RubricTemplate` evaluation and resubmission workflows, study material distribution with version history preservation and release/expiration windows (`publishAt`, `expireAt`), notification event hooks (planning only), and materialized summary analytics.
 * **Dependencies**: Phase 6 (requires `AcademicSession`, `PUBLISHED` `Timetable`, `TeachingAssignment`, `Enrollment`, `ClassSubject`).
 * **Deliverables**:
@@ -105,30 +105,38 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 8 — Non-Teaching Staff & Administrative Directory
+### Phase 8 — Examination, Assessment & Marks Management (IN PROGRESS / DESIGN)
+* **Objective**: Build comprehensive examination management (`Exam`), conflict-checked schedule slots (`ExamSchedule`), granular assessment component breakdowns (`AssessmentComponent`), teacher marks entry sheets with strict teacher scoping (`MarksEntry`), configurable grading scales (`GradeScale`), automated result processing with CGPA/GPA and ranking (`Result`), formal re-evaluation workflows (`ReEvaluationRequest`), and materialized analytics summary cache (`ExamAnalyticsSummary`).
+* **Dependencies**: Phase 7 (requires `AcademicSession`, `AcademicTerm`, `ClassSubject`, `TeachingAssignment`, `Enrollment`).
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod schemas and TypeScript types for `Exam`, `ExamSchedule`, `AssessmentComponent`, `MarksEntry`, `GradeScale`, `Result`, `ReEvaluationRequest`, and `ExamAnalyticsSummary`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#34` to `#41`; REST endpoints under `/api/v1/exams`, `/api/v1/exam-schedules`, `/api/v1/marks`, `/api/v1/results`, `/api/v1/grade-scales`, and `/api/v1/re-evaluations`; RBAC scoping for Teachers (`EXAM_MARKS_SCOPE`), Students/Guardians, and Admins.
+  * **Frontend UI Module (`apps/web`)**: Interactive pages for Exam Dashboard, Exam Scheduler (with real-time conflict warnings), Marks Entry & Bulk Entry (with tabular spreadsheet tab-key navigation), Result Processing & Calculation Workbench, Grade Scale Configuration, Re-evaluation Portal, Exam Analytics Dashboard, and Student Result View.
+* **Acceptance Criteria**:
+  * Marks depend strictly on `AcademicSession -> AcademicTerm -> ClassSubject -> TeachingAssignment -> Enrollment` without duplicating academic mappings.
+  * Teachers can enter and submit marks only for their active `TeachingAssignment` sections/subjects; locking prevents unauthorized modification.
+  * Exam scheduling enforces real-time conflict detection across room, invigilator, and student class/section overlaps.
+  * Re-evaluation workflow maintains an immutable audit trail of mark revisions.
+  * Exam analytics uses a Materialized Summary Cache for high-performance reporting.
+* **Tests Required**: Verification suite `TEST-EXAM-001` to `TEST-EXAM-018` covering exam creation, conflict detection, teacher scoping, draft/submit/lock transitions, grace marks, automated calculation, result publication, re-evaluation audit trails, and materialized analytics.
+
+---
+
+### Phase 9 — Report Cards, Academic Transcripts & Promotion Management
+* **Objective**: Automate end-of-term grade calculation, class ranking, printable PDF report card generation (`ReportCard`), and promotion readiness.
+* **Dependencies**: Phase 8.
+* **Deliverables**: `ReportCard` model and compilation engine; PDF report generator (Puppeteer / PDFKit); Report card viewer UI.
+* **Acceptance Criteria**: Executing result compilation accurately maps percentage to `GradeScale` letter; parent can download clean PDF report card.
+* **Tests Required**: Result compilation workflow test (`TEST-FLOW-EXAM`); grade rule threshold unit tests.
+
+---
+
+### Phase 10 — Non-Teaching Staff & Administrative Directory
 * **Objective**: Build non-teaching administrative staff profile records (`Staff` collection for Receptionist, Accountant, Librarian) and departmental access scoping.
-* **Dependencies**: Phase 7.
+* **Dependencies**: Phase 9.
 * **Deliverables**: `Staff` model and APIs; administrative department directory.
 * **Acceptance Criteria**: Admin can manage non-teaching staff profiles and assign departmental roles.
 * **Tests Required**: Staff employee ID uniqueness test and departmental scope test.
-
----
-
-### Phase 9 — Examination Configuration & Mark Entry
-* **Objective**: Build examination schedules, subject mark allocations, and secure teacher mark entry sheets.
-* **Dependencies**: Phase 5.
-* **Deliverables**: `Exam`, `ExamSubject`, `Mark`, `GradeRule` models and APIs; UI `<MarkEntryTable />` with tabular numbers.
-* **Acceptance Criteria**: Authorized subject teacher can input marks out of configured maximum; system prevents entries exceeding `maxMarks`.
-* **Tests Required**: Mark entry authorization test (`TEST-AUTH-004`); boundary mark validation unit tests.
-
----
-
-### Phase 10 — Grade Calculation, Results & Printable Report Cards
-* **Objective**: Automate end-of-term grade calculation, class ranking, and printable PDF report card generation.
-* **Dependencies**: Phase 9.
-* **Deliverables**: `ReportCard` model and compilation engine; PDF report generator (Puppeteer / PDFKit); Report card viewer UI.
-* **Acceptance Criteria**: Executing result compilation accurately maps percentage to `GradeRule` letter; parent can download clean PDF report card.
-* **Tests Required**: Result compilation workflow test (`TEST-FLOW-EXAM`); grade rule threshold unit tests.
 
 ---
 

@@ -30,5 +30,13 @@ export * from './Homework';
 export * from './HomeworkSubmission';
 export * from './StudyMaterial';
 export * from './RubricTemplate';
+export * from './Exam';
+export * from './ExamSchedule';
+export * from './AssessmentComponent';
+export * from './MarksEntry';
+export * from './GradeScale';
+export * from './Result';
+export * from './ReEvaluationRequest';
+export * from './ExamAnalyticsSummary';
 
 

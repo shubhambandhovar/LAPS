@@ -64,6 +64,7 @@ import maintenanceRoutes from './maintenance.routes';
 import transportSummaryRoutes from './transportSummary.routes';
 import cmsRoutes from './cms.routes';
 import publicRoutes from './public.routes';
+import hrRoutes from './hr.routes';
 import admissionCycleRoutes from './admissionCycle.routes';
 import seatAllocationRoutes from './seatAllocation.routes';
 import admissionRoutes from './admission.routes';
@@ -165,6 +166,7 @@ router.use('/transport-summary', transportSummaryRoutes);
 // Phase 14: Public Website & CMS
 router.use('/cms', cmsRoutes);
 router.use('/public', publicRoutes);
+router.use('/hr', hrRoutes);
 router.use('/admission-cycles', admissionCycleRoutes);
 router.use('/seat-allocation', seatAllocationRoutes);
 router.use('/admissions', admissionRoutes);

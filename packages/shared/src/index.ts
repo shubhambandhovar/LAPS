@@ -84,3 +84,4 @@ export * from './schemas/calendar.schema';
 export * from './schemas/cms.schema';
 export * from './schemas/transport.schema';
 export * from './schemas/admission.schema';
+export * from './schemas/hr.schema';

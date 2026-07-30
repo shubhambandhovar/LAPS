@@ -139,6 +139,18 @@ const PERMISSIONS_LIST: PermDef[] = [
     resource: 'admission',
     description: 'Review and update admissions',
   },
+  {
+    module: 'HR',
+    action: 'READ',
+    resource: 'hr',
+    description: 'View HR records and payroll',
+  },
+  {
+    module: 'HR',
+    action: 'UPDATE',
+    resource: 'hr',
+    description: 'Manage HR and process payroll',
+  },
 ];
 
 export async function seedRbac(): Promise<void> {
@@ -279,6 +291,16 @@ export async function seedRbac(): Promise<void> {
       description: 'Prospective student or parent applying online',
       isSystem: true,
       permissions: [],
+    },
+    {
+      code: 'HR_MANAGER',
+      name: 'HR Manager',
+      description: 'Manages employee records, salaries, and payroll',
+      isSystem: true,
+      permissions: [
+        permMap.get('HR_READ_hr')?._id,
+        permMap.get('HR_UPDATE_hr')?._id,
+      ].filter(Boolean),
     },
   ];
 

@@ -198,7 +198,7 @@ beforeAll(async () => {
     passwordHash,
     roleId: driverRole._id,
     roleCode: 'DRIVER',
-    userType: 'DRIVER',
+    userType: 'STAFF',
     status: 'ACTIVE',
   });
   driverUserId = driverUser._id.toString();

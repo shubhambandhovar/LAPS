@@ -57,7 +57,7 @@ describe('Phase 2 — Role-Based Access Control (RBAC) Verification Suite', () =
       passwordHash,
       roleId: role._id,
       roleCode: 'RECEPTIONIST',
-      userType: 'RECEPTIONIST',
+      userType: 'STAFF',
       status: 'ACTIVE',
     });
 

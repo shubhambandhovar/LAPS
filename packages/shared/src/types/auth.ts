@@ -9,7 +9,9 @@ export type UserRoleCode =
   | 'RECEPTIONIST'
   | 'LIBRARIAN'
   | 'TRANSPORT_MANAGER'
-  | 'DRIVER';
+  | 'DRIVER'
+  | 'ADMISSION_OFFICER'
+  | 'APPLICANT';
 
 export interface PermissionRule {
   module: string;

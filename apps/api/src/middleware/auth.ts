@@ -59,3 +59,15 @@ export async function authenticate(
     next(err);
   }
 }
+
+export function requireRole(roles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      return next(new AppError(401, ErrorCodes.AUTH_TOKEN_EXPIRED, 'Authentication required'));
+    }
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError(403, ErrorCodes.RBAC_PERMISSION_DENIED, 'Access denied'));
+    }
+    next();
+  };
+}

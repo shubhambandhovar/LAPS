@@ -83,3 +83,4 @@ export * from './types/communication.types';
 export * from './schemas/calendar.schema';
 export * from './schemas/cms.schema';
 export * from './schemas/transport.schema';
+export * from './schemas/admission.schema';

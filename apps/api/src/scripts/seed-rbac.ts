@@ -127,6 +127,18 @@ const PERMISSIONS_LIST: PermDef[] = [
     resource: 'cms',
     description: 'Manage public website content',
   },
+  {
+    module: 'ADMISSION',
+    action: 'READ',
+    resource: 'admission',
+    description: 'View admission applications',
+  },
+  {
+    module: 'ADMISSION',
+    action: 'UPDATE',
+    resource: 'admission',
+    description: 'Review and update admissions',
+  },
 ];
 
 export async function seedRbac(): Promise<void> {
@@ -250,6 +262,23 @@ export async function seedRbac(): Promise<void> {
       description: 'Manages public media assets and library',
       isSystem: true,
       permissions: [permMap.get('CMS_UPDATE_cms')?._id].filter(Boolean),
+    },
+    {
+      code: 'ADMISSION_OFFICER',
+      name: 'Admission Officer',
+      description: 'Manages online admission enquiries and applications',
+      isSystem: true,
+      permissions: [
+        permMap.get('ADMISSION_READ_admission')?._id,
+        permMap.get('ADMISSION_UPDATE_admission')?._id,
+      ].filter(Boolean),
+    },
+    {
+      code: 'APPLICANT',
+      name: 'Public Applicant',
+      description: 'Prospective student or parent applying online',
+      isSystem: true,
+      permissions: [],
     },
   ];
 

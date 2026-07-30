@@ -64,6 +64,12 @@ import maintenanceRoutes from './maintenance.routes';
 import transportSummaryRoutes from './transportSummary.routes';
 import cmsRoutes from './cms.routes';
 import publicRoutes from './public.routes';
+import admissionCycleRoutes from './admissionCycle.routes';
+import seatAllocationRoutes from './seatAllocation.routes';
+import admissionRoutes from './admission.routes';
+import admissionDocumentRoutes from './admissionDocument.routes';
+import admissionReviewRoutes from './admissionReview.routes';
+import admissionSummaryRoutes from './admissionSummary.routes';
 
 const router = Router();
 
@@ -159,8 +165,11 @@ router.use('/transport-summary', transportSummaryRoutes);
 // Phase 14: Public Website & CMS
 router.use('/cms', cmsRoutes);
 router.use('/public', publicRoutes);
+router.use('/admission-cycles', admissionCycleRoutes);
+router.use('/seat-allocation', seatAllocationRoutes);
+router.use('/admissions', admissionRoutes);
+router.use('/admission-documents', admissionDocumentRoutes);
+router.use('/admission-review', admissionReviewRoutes);
+router.use('/admission-summary', admissionSummaryRoutes);
 
 export default router;
-
-
-

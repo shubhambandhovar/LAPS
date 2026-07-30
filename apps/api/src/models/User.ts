@@ -64,6 +64,7 @@ const UserSchema = new Schema<IUserDocument>(
       type: String,
       required: true,
       uppercase: true,
+      enum: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'GUARDIAN', 'STAFF', 'APPLICANT'],
     },
     profileRef: {
       type: Schema.Types.ObjectId,

@@ -9,6 +9,12 @@ import { CmsPageViewer } from '../modules/public/CmsPageViewer';
 import { PublicNews } from '../modules/public/PublicNews';
 import { PublicNotices } from '../modules/public/PublicNotices';
 import { PublicGallery } from '../modules/public/PublicGallery';
+import { AdmissionsLanding } from '../modules/public/AdmissionsLanding';
+import { AdmissionApplicationForm } from '../modules/public/AdmissionApplicationForm';
+import { ApplicationStatus } from '../modules/public/ApplicationStatus';
+import { AdmissionDashboard } from '../modules/admissions/AdmissionDashboard';
+import { AdmissionCycleManager } from '../modules/admissions/AdmissionCycleManager';
+import { ApplicationReviewer } from '../modules/admissions/ApplicationReviewer';
 import { PortalHomeShell } from '../modules/portal/PortalHomeShell';
 import { UnauthorizedShell } from '../modules/portal/UnauthorizedShell';
 import { NotFoundShell } from '../modules/errors/NotFoundShell';
@@ -93,22 +99,13 @@ const router = createBrowserRouter([
         path: 'login',
         element: <LoginPage />,
       },
-      {
-        path: 'news',
-        element: <PublicNews />,
-      },
-      {
-        path: 'notices',
-        element: <PublicNotices />,
-      },
-      {
-        path: 'gallery',
-        element: <PublicGallery />,
-      },
-      {
-        path: ':slug',
-        element: <CmsPageViewer />,
-      },
+      { path: 'news', element: <PublicNews /> },
+      { path: 'notices', element: <PublicNotices /> },
+      { path: 'gallery', element: <PublicGallery /> },
+      { path: 'admissions', element: <AdmissionsLanding /> },
+      { path: 'apply', element: <ProtectedRoute><AdmissionApplicationForm /></ProtectedRoute> },
+      { path: 'application-status', element: <ProtectedRoute><ApplicationStatus /></ProtectedRoute> },
+      { path: 'page/:slug', element: <CmsPageViewer /> },
     ],
   },
   {
@@ -134,6 +131,14 @@ const router = createBrowserRouter([
       {
         path: 'classes',
         element: <ClassesPage />,
+      },
+      {
+        path: 'admissions',
+        children: [
+          { index: true, element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ADMISSION_OFFICER']}><AdmissionDashboard /></ProtectedRoute> },
+          { path: 'cycles', element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ADMISSION_OFFICER']}><AdmissionCycleManager /></ProtectedRoute> },
+          { path: 'review/:id', element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ADMISSION_OFFICER']}><ApplicationReviewer /></ProtectedRoute> },
+        ],
       },
       {
         path: 'sections',

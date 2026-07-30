@@ -260,3 +260,12 @@ router.get(
   ReportCardController.getStudentReportCard
 );
 ```
+
+### 6. Phase 14: Content Management (CMS)
+
+| Role | Scope | Permissions | Description |
+| :--- | :--- | :--- | :--- |
+| **CONTENT_EDITOR** | School | `cms:page:*`, `cms:banner:*`, `cms:menu:*` | Can create, edit, and publish website content. No access to academic/financial ERP modules. |
+| **MEDIA_MANAGER** | School | `cms:media:*` | Can upload and manage media library assets. |
+| **SCHOOL_ADMIN** | School | `cms:theme:*`, `cms:*:*` | Complete control over website configuration and themes. |
+| **PUBLIC** | Global | `public:read:*` | Read-only access to published public website data (pages, menus, notices, news). |

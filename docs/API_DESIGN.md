@@ -571,3 +571,29 @@ Standard collection endpoints accept uniform URL query parameters:
 
 ### 5.17. Audit System & Security Logs (`/api/v1/audit-logs`)
 * `GET  /api/v1/audit-logs`: Super Admin search across immutable audit logs (filterable by actor, action code, date range, entity).
+
+## 15. CMS & Public Website API (Phase 14)
+
+### CMS Management (Private / ERP)
+| Method | Endpoint | Description | Role / Scope |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/v1/cms/pages` | List CMS pages | CONTENT_EDITOR |
+| POST | `/api/v1/cms/pages` | Create CMS page | CONTENT_EDITOR |
+| GET | `/api/v1/cms/pages/:id` | Get CMS page | CONTENT_EDITOR |
+| PUT | `/api/v1/cms/pages/:id` | Update CMS page | CONTENT_EDITOR |
+| POST | `/api/v1/cms/pages/:id/publish` | Publish CMS page | CONTENT_EDITOR |
+| GET | `/api/v1/cms/banners` | Manage Banners | CONTENT_EDITOR |
+| GET | `/api/v1/cms/menu` | Manage Menus | CONTENT_EDITOR |
+| POST | `/api/v1/cms/media` | Upload Media Asset | MEDIA_MANAGER |
+| GET | `/api/v1/cms/media` | List Media Assets | MEDIA_MANAGER |
+| PUT | `/api/v1/cms/theme` | Update Theme Settings | SCHOOL_ADMIN |
+
+### Public Website API (Read-Only)
+| Method | Endpoint | Description | Role / Scope |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/v1/public/theme` | Get active theme & contact settings | PUBLIC |
+| GET | `/api/v1/public/menu` | Get header/footer menus | PUBLIC |
+| GET | `/api/v1/public/banners` | Get active banners by position | PUBLIC |
+| GET | `/api/v1/public/pages/:slug` | Get published page content & SEO | PUBLIC |
+| GET | `/api/v1/public/news` | Get published news & events | PUBLIC |
+| GET | `/api/v1/public/notices` | Get public notices & circulars | PUBLIC |

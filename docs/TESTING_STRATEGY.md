@@ -417,3 +417,14 @@ In Phase 13, automated verification in `apps/api/src/__tests__/transport.test.ts
    * Query `/api/v1/transport-summary` -> Asserts accurate calculation of total vehicles, active routes, total assigned students, overall occupancy percentage, and maintenance spend.
 10. **Route Overlap & Archiving Validation (`TEST-TRN-010`)**:
     * Admin archives a `Route` -> Asserts route status transitions to `"ARCHIVED"` and subsequent attempts to assign new students to the archived route are rejected with `400 Bad Request`.
+
+## 15. Phase 14: Public Website & CMS Tests
+
+**Core Focus**: Validation of public-facing endpoints, SEO metadata handling, content publishing workflows, and strict RBAC isolation between Content Editors and ERP Academic/Financial modules.
+
+**Key Test Scenarios**:
+*   **Publishing Workflow**: Assert that setting a `CmsPage` status to `PUBLISHED` successfully exposes the slug via the `/api/v1/public/pages/:slug` endpoint.
+*   **SEO Metadata**: Verify that `SeoMetadata` (Title, Description, OpenGraph, Canonical) is strictly validated during page creation and accurately returned on public read.
+*   **ERP Data Integration**: Assert that public `/api/v1/public/notices` strictly filters for globally-visible published notices (reusing existing ERP Notice models).
+*   **RBAC Boundaries**: Assert that a `CONTENT_EDITOR` token is rejected (`403 Forbidden`) when attempting to access `/api/v1/finance/*` or `/api/v1/students/*`.
+*   **Public Access Control**: Ensure `/api/v1/public/*` endpoints remain unauthenticated (`200 OK`) but reject writes (`401/403`).

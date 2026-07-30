@@ -67,8 +67,11 @@ export * from './Driver';
 export * from './Route';
 export * from './Stop';
 export * from './StudentTransportAssignment';
+export * from './TransportSummary';
 export * from './GpsLocation';
 export * from './MaintenanceRecord';
-export * from './TransportSummary';
-
-
+export * from './CmsPage';
+export * from './CmsBanner';
+export * from './CmsMenu';
+export * from './MediaAsset';
+export * from './ThemeSettings';

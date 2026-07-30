@@ -161,3 +161,18 @@ graph LR
   * **Notification Bell**: Dropdown list of unread circulars and homework due alerts.
   * **User Profile Avatar**: Dropdown with *My Profile*, *Multi-Device Sessions*, and *Log Out Everywhere*.
 * **Breadcrumb Trail**: Dynamic breadcrumb navigation (e.g., `Portal > Academic > Classes > Class 10 - Sec A`).
+
+### 9. Content Management System (CMS) & Public Website
+**Module Path**: `apps/web/src/modules/cms/` and `apps/web/src/modules/public/`
+
+**Key Interfaces:**
+*   **Public Website**: Dynamic rendering of Home, About, Academics, Faculty, Gallery, News, Notices, Admissions, and Contact pages based on CMS and ERP data.
+*   **CMS Dashboard**: Overview of content metrics, draft pages, and recent media uploads.
+*   **Page Builder**: Editor for `CmsPage` content, metadata, and SEO settings.
+*   **Media Library**: Grid-based asset manager supporting categories and tags.
+*   **Theme Settings**: Visual editor for configuring brand colors, logos, and global site footers.
+
+**State Management & Data Strategy:**
+*   **Read-Only SSR/SSG (Public)**: Optimizing public-facing pages for SEO using Next.js (if applicable) or robust React hydration. Data fetched from `/api/v1/public/*`.
+*   **Content Caching**: Leveraging React Query for caching public configurations (e.g., Theme, Menu) to reduce duplicate API requests.
+*   **ERP Data Reuse**: Integrating active ERP modules like `Notices` and `Events` natively into the public news feed without duplicating data in the CMS.

@@ -81,4 +81,5 @@ export * from './schemas/fee.schema';
 export * from './schemas/communication.schema';
 export * from './types/communication.types';
 export * from './schemas/calendar.schema';
+export * from './schemas/cms.schema';
 export * from './schemas/transport.schema';

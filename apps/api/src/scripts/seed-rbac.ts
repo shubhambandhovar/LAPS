@@ -237,6 +237,20 @@ export async function seedRbac(): Promise<void> {
       isSystem: true,
       permissions: [],
     },
+    {
+      code: 'CONTENT_EDITOR',
+      name: 'Content Editor',
+      description: 'Manages website content (Pages, Banners, Menus)',
+      isSystem: true,
+      permissions: [permMap.get('CMS_UPDATE_cms')?._id].filter(Boolean),
+    },
+    {
+      code: 'MEDIA_MANAGER',
+      name: 'Media Manager',
+      description: 'Manages public media assets and library',
+      isSystem: true,
+      permissions: [permMap.get('CMS_UPDATE_cms')?._id].filter(Boolean),
+    },
   ];
 
   for (const r of ROLES_DEFINITIONS) {

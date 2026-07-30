@@ -4,6 +4,11 @@ import { PublicLayout } from '../layouts/PublicLayout';
 import { ERPLayout } from '../layouts/ERPLayout';
 import { HomeShell } from '../modules/public/HomeShell';
 import { LoginPage } from '../modules/auth/LoginPage';
+import { CmsDashboard } from '../modules/cms/CmsDashboard';
+import { CmsPageViewer } from '../modules/public/CmsPageViewer';
+import { PublicNews } from '../modules/public/PublicNews';
+import { PublicNotices } from '../modules/public/PublicNotices';
+import { PublicGallery } from '../modules/public/PublicGallery';
 import { PortalHomeShell } from '../modules/portal/PortalHomeShell';
 import { UnauthorizedShell } from '../modules/portal/UnauthorizedShell';
 import { NotFoundShell } from '../modules/errors/NotFoundShell';
@@ -87,6 +92,22 @@ const router = createBrowserRouter([
       {
         path: 'login',
         element: <LoginPage />,
+      },
+      {
+        path: 'news',
+        element: <PublicNews />,
+      },
+      {
+        path: 'notices',
+        element: <PublicNotices />,
+      },
+      {
+        path: 'gallery',
+        element: <PublicGallery />,
+      },
+      {
+        path: ':slug',
+        element: <CmsPageViewer />,
       },
     ],
   },
@@ -299,6 +320,11 @@ const router = createBrowserRouter([
       {
         path: 'calendar/reminders',
         element: <EventReminders />,
+      },
+      // Phase 14: CMS Dashboard
+      {
+        path: 'cms/dashboard',
+        element: <CmsDashboard />,
       },
     ],
   },

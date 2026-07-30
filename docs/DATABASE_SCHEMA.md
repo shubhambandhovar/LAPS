@@ -2239,3 +2239,59 @@ sequenceDiagram
 1. **Zero Data Overwriting**: The `Student` profile remains unchanged.
 2. **Historical Integrity**: A query for `Attendance.find({ studentId: S._id, academicSessionId: "2025-26" })` correctly returns Class 5 attendance without interference from Class 6 records.
 3. **Auditable Transition**: Every promotion is executed inside a MongoDB ACID transaction and generates a `"STUDENT_PROMOTED"` `AuditLog` entry.
+
+## 15. CMS & Public Website (Phase 14)
+
+### CmsPage
+Stores content pages for the public website.
+*   `schoolId` (String, Ref: School, Index)
+*   `title` (String, Required)
+*   `slug` (String, Required, Unique per school)
+*   `content` (String, HTML/Markdown)
+*   `status` (Enum: DRAFT, PUBLISHED, ARCHIVED, Default: DRAFT)
+*   `seoMetadata` (SubDocument: metaTitle, metaDescription, openGraph, canonical, robots)
+*   `authorId` (ObjectId, Ref: User)
+*   `versionHistory` (Array of { version, content, updatedBy, updatedAt })
+*   `publishedAt` (Date)
+*   `timestamps` (createdAt, updatedAt)
+
+### CmsBanner
+Manages hero banners and carousels for the website.
+*   `schoolId` (String, Ref: School, Index)
+*   `title` (String, Required)
+*   `imageUrl` (String, Required)
+*   `linkUrl` (String)
+*   `position` (Enum: HOMEPAGE, ACADEMICS, ADMISSIONS, etc.)
+*   `displayOrder` (Number, Default: 0)
+*   `status` (Enum: ACTIVE, INACTIVE, Default: ACTIVE)
+*   `timestamps` (createdAt, updatedAt)
+
+### CmsMenu
+Manages dynamic navigation menus.
+*   `schoolId` (String, Ref: School, Index)
+*   `location` (Enum: HEADER, FOOTER, QUICK_LINKS, Required)
+*   `items` (Array of SubDocument: label, url, displayOrder, parentId)
+*   `timestamps` (createdAt, updatedAt)
+
+### MediaAsset
+Central media library for images, documents, and videos.
+*   `schoolId` (String, Ref: School, Index)
+*   `originalName` (String)
+*   `url` (String, Required)
+*   `mimeType` (String, Required)
+*   `sizeBytes` (Number)
+*   `category` (Enum: IMAGE, DOCUMENT, VIDEO)
+*   `tags` (Array of String)
+*   `uploadedBy` (ObjectId, Ref: User)
+*   `timestamps` (createdAt, updatedAt)
+
+### ThemeSettings
+School-specific branding and theme configuration.
+*   `schoolId` (String, Ref: School, Unique)
+*   `logoUrl` (String)
+*   `faviconUrl` (String)
+*   `colors` (SubDocument: primary, secondary, accent)
+*   `socialLinks` (SubDocument: facebook, twitter, instagram, youtube, linkedin)
+*   `footerText` (String)
+*   `contactInfo` (SubDocument: address, phone, email, googleMapEmbedUrl)
+*   `timestamps` (createdAt, updatedAt)

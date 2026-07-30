@@ -62,6 +62,8 @@ import assignmentRoutes from './assignment.routes';
 import gpsRoutes from './gps.routes';
 import maintenanceRoutes from './maintenance.routes';
 import transportSummaryRoutes from './transportSummary.routes';
+import cmsRoutes from './cms.routes';
+import publicRoutes from './public.routes';
 
 const router = Router();
 
@@ -153,6 +155,10 @@ router.use('/assignments', assignmentRoutes);
 router.use('/gps', gpsRoutes);
 router.use('/maintenance', maintenanceRoutes);
 router.use('/transport-summary', transportSummaryRoutes);
+
+// Phase 14: Public Website & CMS
+router.use('/cms', cmsRoutes);
+router.use('/public', publicRoutes);
 
 export default router;
 

@@ -210,6 +210,30 @@ The Event & Holiday Calendar module (`/api/v1/calendar`, `/api/v1/events`, `/api
 3. **Holiday Management**:
    - Only `SUPER_ADMIN` and `SCHOOL_ADMIN` can modify the school's global `Holiday` list and `AcademicCalendarSummary`.
 
+### 3.12. Transport, Fleet & GPS Tracking Scoping
+
+The Transport, Fleet & GPS Tracking module (`/api/v1/vehicles`, `/api/v1/drivers`, `/api/v1/routes`, `/api/v1/stops`, `/api/v1/assignments`, `/api/v1/gps`, `/api/v1/maintenance`, `/api/v1/transport-summary`) implements strict role-based and entity-scoped isolation:
+
+#### Dynamic Permission Matrix for Transport:
+
+| Role | Vehicles & Drivers | Routes & Stops | Student Assignments | GPS Live & Telemetry | Maintenance Logs | Transport Summary |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`SUPER_ADMIN`** | FULL CRUD | FULL CRUD | FULL CRUD | VIEW ALL, LOG | FULL CRUD | VIEW, RECALCULATE |
+| **`SCHOOL_ADMIN`** | FULL CRUD | FULL CRUD | FULL CRUD | VIEW ALL, LOG | FULL CRUD | VIEW, RECALCULATE |
+| **`TRANSPORT_MANAGER`** | FULL CRUD | FULL CRUD | FULL CRUD | VIEW ALL, LOG | FULL CRUD | VIEW, RECALCULATE |
+| **`DRIVER`** | VIEW (Assigned Vehicle) | VIEW (Assigned Routes) | VIEW (Assigned Bus Roster) | LOG TELEMETRY, VIEW OWN | VIEW (Assigned Vehicle) | NO ACCESS |
+| **`TEACHER`** | VIEW ONLY | VIEW ONLY | VIEW (Assigned Class/Section Students) | VIEW (Assigned Students' Buses) | NO ACCESS | VIEW ONLY |
+| **`STUDENT`** | VIEW (Assigned Vehicle) | VIEW (Assigned Route/Stop) | VIEW OWN ONLY | VIEW (Assigned Vehicle ETA) | NO ACCESS | NO ACCESS |
+| **`GUARDIAN`** | VIEW (Ward's Vehicle) | VIEW (Ward's Route/Stop) | VIEW WARD'S ONLY | VIEW (Ward's Vehicle ETA) | NO ACCESS | NO ACCESS |
+
+#### Architectural Scoping Rules for Transport:
+1. **Student & Guardian Transport Isolation (`enforceTransportStudentScope`)**:
+   - Students querying `/api/v1/assignments` or `/api/v1/gps/live` automatically receive only records matching their own `studentId` or their ward's `studentId` (via `StudentGuardian` verification). Attempting to pass another student's ID results in `403 Forbidden`.
+2. **Teacher Dismissal & Bus Duty Scoping (`enforceTransportTeacherScope`)**:
+   - Teachers can inspect student transport assignments for students enrolled in classes/sections where the teacher holds an active `TeachingAssignment`.
+3. **Driver Fleet Telemetry Scoping (`enforceDriverVehicleScope`)**:
+   - Drivers can only submit GPS telemetry (`POST /api/v1/gps/telemetry`) for the vehicle currently assigned to their active route profile.
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

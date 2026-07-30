@@ -505,15 +505,69 @@ Standard collection endpoints accept uniform URL query parameters:
 * `DELETE /api/v1/reminders/:id`: Cancel an event reminder.
 
 
-### 5.14. Public CMS & Website Content (`/api/v1/cms`)
+### 5.14. Transport, Fleet & GPS Tracking (`/api/v1/vehicles`, `/api/v1/drivers`, `/api/v1/routes`, `/api/v1/stops`, `/api/v1/assignments`, `/api/v1/gps`, `/api/v1/maintenance`, `/api/v1/transport-summary`)
+
+#### A. Fleet Vehicles (`/api/v1/vehicles`)
+* `GET    /api/v1/vehicles`: List fleet vehicles (filterable by `status`, `vehicleType`, min/max capacity, and expiring insurance/fitness).
+* `POST   /api/v1/vehicles`: (Super Admin / School Admin / Transport Manager) Create a new fleet vehicle with insurance and fitness certificate details.
+* `GET    /api/v1/vehicles/:id`: Retrieve detailed vehicle information including active assignments and maintenance history.
+* `PATCH  /api/v1/vehicles/:id`: Update vehicle details, capacity, status, or renew insurance/fitness certificates.
+* `DELETE /api/v1/vehicles/:id`: Archive/retire a vehicle (blocked if active student assignments exist).
+
+#### B. Transport Drivers (`/api/v1/drivers`)
+* `GET    /api/v1/drivers`: List transport drivers (filterable by `status`, license type, verification status, and medical expiry).
+* `POST   /api/v1/drivers`: Create a new driver profile with license, background verification, and emergency contact details.
+* `GET    /api/v1/drivers/:id`: Retrieve driver profile and assigned vehicle/route history.
+* `PATCH  /api/v1/drivers/:id`: Update driver profile, license renewal, or background verification status.
+* `DELETE /api/v1/drivers/:id`: Deactivate driver profile.
+
+#### C. Bus Routes (`/api/v1/routes`)
+* `GET    /api/v1/routes`: List all bus routes with stop count, total distance, and estimated duration.
+* `POST   /api/v1/routes`: Create a new route with source, destination, and ordered stop sequence (`[ { stopId, orderSequence, estimatedArrivalFromStartMinutes } ]`).
+* `GET    /api/v1/routes/:id`: Retrieve route details including populated stops and assigned student roster.
+* `PATCH  /api/v1/routes/:id`: Update route details or stop ordering sequence.
+* `DELETE /api/v1/routes/:id`: Archive route (blocked if active assignments exist).
+
+#### D. Bus Stops (`/api/v1/stops`)
+* `GET    /api/v1/stops`: List all geocoded bus stops (filterable by status and route inclusion).
+* `POST   /api/v1/stops`: Create a new bus stop with GPS latitude/longitude, pickup time, and drop time.
+* `GET    /api/v1/stops/:id`: Retrieve stop details and list of assigned students.
+* `PATCH  /api/v1/stops/:id`: Update stop name, GPS coordinates, or timetable.
+* `DELETE /api/v1/stops/:id`: Archive bus stop.
+
+#### E. Student Transport Assignments (`/api/v1/assignments`)
+* `GET    /api/v1/assignments`: Retrieve student transport assignments (scoped by RBAC: Students/Guardians view only their own assignment; Teachers view assignments for students in their assigned classes; Admins view all).
+* `POST   /api/v1/assignments`: Assign a student to a `Route`, `Stop`, and `Vehicle` for an `AcademicSession`. Validates vehicle capacity and prevents duplicate active assignments.
+* `GET    /api/v1/assignments/:id`: Retrieve assignment details.
+* `PATCH  /api/v1/assignments/:id`: Update assignment (change stop, vehicle, or effective dates).
+* `PATCH  /api/v1/assignments/:id/cancel`: Terminate/cancel transport assignment.
+
+#### F. GPS Telemetry & Live Tracking (`/api/v1/gps`)
+* `POST   /api/v1/gps/telemetry`: Record live GPS coordinates, speed, heading, and route progress for a vehicle (ERP simulator/telemetry ingestion).
+* `GET    /api/v1/gps/live`: Retrieve real-time last-known coordinates and ETA for active fleet vehicles (Students/Guardians see only their assigned vehicle).
+* `GET    /api/v1/gps/history/:vehicleId`: Retrieve historical breadcrumb trail for a vehicle within a time window.
+
+#### G. Vehicle Maintenance Logs (`/api/v1/maintenance`)
+* `GET    /api/v1/maintenance`: List maintenance records (filterable by `vehicleId`, `maintenanceType`, and `status`).
+* `POST   /api/v1/maintenance`: Log a new maintenance event (`SERVICE_SCHEDULE`, `FUEL_LOG`, `REPAIR`, `INSURANCE_RENEWAL`, `FITNESS_RENEWAL`).
+* `GET    /api/v1/maintenance/:id`: Retrieve maintenance record details.
+* `PATCH  /api/v1/maintenance/:id`: Update maintenance record status, odometer reading, or costs.
+* `DELETE /api/v1/maintenance/:id`: Delete/cancel maintenance record.
+
+#### H. Transport Summary & KPI Analytics (`/api/v1/transport-summary`)
+* `GET    /api/v1/transport-summary?academicSessionId=...`: Retrieve comprehensive Transport Summary KPIs (fleet occupancy, active vehicle count, maintenance spend, route utilization).
+* `POST   /api/v1/transport-summary/recalculate`: Admin action to recalculate and refresh materialized transport summary metrics.
+
+
+### 5.15. Public CMS & Website Content (`/api/v1/cms`)
 * `GET  /api/v1/cms/gallery/albums`: Public/Admin view photo gallery albums.
 * `POST /api/v1/cms/gallery/albums`: Admin create gallery album and upload images.
 * `PATCH /api/v1/cms/homepage`: Update homepage hero banners, announcement ticker, and principal message.
 
-### 5.15. Admission Enquiries (`/api/v1/admissions`)
+### 5.16. Admission Enquiries (`/api/v1/admissions`)
 * `POST /api/v1/admissions/enquiries`: Public website endpoint to submit online admission inquiry.
 * `GET  /api/v1/admissions/enquiries`: Admin/Receptionist paginated Kanban view of enquiries.
 * `PATCH /api/v1/admissions/enquiries/:id/status`: Update inquiry pipeline status and append follow-up notes.
 
-### 5.16. Audit System & Security Logs (`/api/v1/audit-logs`)
+### 5.17. Audit System & Security Logs (`/api/v1/audit-logs`)
 * `GET  /api/v1/audit-logs`: Super Admin search across immutable audit logs (filterable by actor, action code, date range, entity).

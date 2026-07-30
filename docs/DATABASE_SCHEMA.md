@@ -1956,6 +1956,264 @@ Immutable security and administrative audit ledger.
   * `{ timestamp: -1 }`
   * `{ targetEntityType: 1, targetEntityId: 1 }`
   * `{ actorUserId: 1, timestamp: -1 }`
+
+---
+
+### 3.14. Transport, Fleet & GPS Tracking Module Collections (#74–#81)
+
+#### 74. `Vehicle`
+Fleet vehicle registration and insurance/fitness compliance tracking.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `registrationNumber`: String (Required, unique, uppercase, trimmed)
+  * `vehicleType`: Enum (`"BUS" | "VAN" | "MINI_BUS" | "CAR" | "OTHER"`, default `"BUS"`)
+  * `capacity`: Number (Required integer, min 1)
+  * `status`: Enum (`"ACTIVE" | "MAINTENANCE" | "INACTIVE" | "RETIRED"`, default `"ACTIVE"`)
+  * `insuranceDetails`: Object
+    * `policyNumber`: String
+    * `insurer`: String
+    * `validFrom`: Date
+    * `validUntil`: Date
+    * `documentUrl`: String (Optional CDN URL)
+  * `fitnessCertificate`: Object
+    * `certificateNumber`: String
+    * `validFrom`: Date
+    * `validUntil`: Date
+    * `documentUrl`: String (Optional CDN URL)
+  * `maintenanceSchedule`: Object
+    * `lastServiceDate`: Date (Optional)
+    * `nextServiceDate`: Date (Optional)
+    * `intervalDays`: Number (Default 90)
+    * `mileageAtLastService`: Number (Optional)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `archivedBy`: ObjectId -> `User` (Optional)
+  * `archivedAt`: Date (Optional)
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ schoolId: 1, registrationNumber: 1 }` (Unique)
+  * `{ status: 1 }`
+  * `{ "insuranceDetails.validUntil": 1 }`
+  * `{ "fitnessCertificate.validUntil": 1 }`
+
+#### 75. `Driver`
+Driver profile, license validation, and background verification.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `driverProfile`: Object
+    * `firstName`: String (Required)
+    * `lastName`: String (Required)
+    * `phone`: String (Required, 10-digit mobile)
+    * `email`: String (Optional)
+    * `address`: String (Required)
+    * `city`: String (Required)
+    * `state`: String (Required)
+    * `pinCode`: String (Required)
+    * `profilePictureUrl`: String (Optional)
+  * `licenseDetails`: Object
+    * `licenseNumber`: String (Required, unique)
+    * `licenseType`: String (e.g. `"HEAVY_VEHICLE"`, `"COMMERCIAL"`)
+    * `issuingAuthority`: String (Required)
+    * `validFrom`: Date (Required)
+    * `validUntil`: Date (Required)
+    * `documentUrl`: String (Optional CDN URL)
+  * `emergencyContact`: Object
+    * `name`: String (Required)
+    * `relationship`: String (Required)
+    * `phone`: String (Required)
+  * `medicalExpiry`: Date (Required)
+  * `backgroundVerification`: Object
+    * `isVerified`: Boolean (Default `false`)
+    * `verificationDate`: Date (Optional)
+    * `agencyName`: String (Optional)
+    * `referenceNumber`: String (Optional)
+    * `status`: Enum (`"PENDING" | "VERIFIED" | "REJECTED"`, default `"PENDING"`)
+  * `status`: Enum (`"ACTIVE" | "ON_LEAVE" | "SUSPENDED" | "INACTIVE"`, default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ schoolId: 1, "licenseDetails.licenseNumber": 1 }` (Unique)
+  * `{ status: 1 }`
+  * `{ "licenseDetails.validUntil": 1 }`
+  * `{ medicalExpiry: 1 }`
+
+#### 76. `Route`
+Bus route definition with sequential stop ordering and distance metrics.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `routeName`: String (Required, unique per school)
+  * `routeCode`: String (Required, uppercase, unique per school)
+  * `source`: Object
+    * `name`: String (Required)
+    * `address`: String (Optional)
+    * `gpsCoordinates`: `{ latitude: Number, longitude: Number }`
+  * `destination`: Object
+    * `name`: String (Required)
+    * `address`: String (Optional)
+    * `gpsCoordinates`: `{ latitude: Number, longitude: Number }`
+  * `stops`: Array of Objects
+    * `stopId`: ObjectId -> `Stop` (Required)
+    * `orderSequence`: Number (Required integer >= 1)
+    * `estimatedArrivalFromStartMinutes`: Number (Required integer >= 0)
+    * `studentCount`: Number (Cached assigned student count, default 0)
+  * `estimatedDurationMinutes`: Number (Required integer >= 1)
+  * `distanceKm`: Number (Required decimal >= 0)
+  * `status`: Enum (`"ACTIVE" | "INACTIVE" | "ARCHIVED"`, default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ schoolId: 1, routeCode: 1 }` (Unique)
+  * `{ schoolId: 1, routeName: 1 }` (Unique)
+  * `{ status: 1 }`
+
+#### 77. `Stop`
+Geocoded transport bus stop directory.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `stopName`: String (Required)
+  * `stopCode`: String (Required, uppercase, unique per school)
+  * `gpsCoordinates`: Object
+    * `latitude`: Number (Required, -90 to 90)
+    * `longitude`: Number (Required, -180 to 180)
+  * `pickupTime`: String (Required HH:mm format, e.g. `"07:15"`)
+  * `dropTime`: String (Required HH:mm format, e.g. `"15:45"`)
+  * `landmark`: String (Optional)
+  * `studentCount`: Number (Cached count of active student assignments, default 0)
+  * `status`: Enum (`"ACTIVE" | "INACTIVE" | "ARCHIVED"`, default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ schoolId: 1, stopCode: 1 }` (Unique)
+  * `{ stopName: 1 }`
+  * `{ status: 1 }`
+
+#### 78. `StudentTransportAssignment`
+Student assignment to a specific Route, Stop, and Vehicle for an AcademicSession.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `studentId`: ObjectId -> `Student` (Required, indexed)
+  * `enrollmentId`: ObjectId -> `Enrollment` (Required, indexed)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, indexed)
+  * `routeId`: ObjectId -> `Route` (Required, indexed)
+  * `stopId`: ObjectId -> `Stop` (Required, indexed)
+  * `vehicleId`: ObjectId -> `Vehicle` (Required, indexed)
+  * `effectiveFrom`: Date (Required, default `Date.now`)
+  * `effectiveUntil`: Date (Optional)
+  * `transportFeeAmount`: Number (Optional, default 0)
+  * `status`: Enum (`"ACTIVE" | "SUSPENDED" | "CANCELLED" | "COMPLETED"`, default `"ACTIVE"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ studentId: 1, academicSessionId: 1, status: 1 }`
+  * `{ routeId: 1, stopId: 1, status: 1 }`
+  * `{ vehicleId: 1, status: 1 }`
+* **Validation & Business Rules**:
+  * A student can have at most ONE `"ACTIVE"` assignment per `academicSessionId`.
+  * Total active assignments for a `vehicleId` cannot exceed `Vehicle.capacity`.
+  * The selected `stopId` must exist in `Route.stops`.
+
+#### 79. `GpsLocation`
+Vehicle GPS telemetry stream and route progress tracking (ERP architecture only; no external provider dependency).
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `vehicleId`: ObjectId -> `Vehicle` (Required, indexed)
+  * `routeId`: ObjectId -> `Route` (Optional, indexed)
+  * `driverId`: ObjectId -> `Driver` (Optional, indexed)
+  * `timestamp`: Date (Required, default `Date.now`, indexed)
+  * `coordinates`: Object
+    * `latitude`: Number (Required)
+    * `longitude`: Number (Required)
+  * `speedKmh`: Number (Required, default 0)
+  * `headingDegrees`: Number (Required, 0-359)
+  * `lastKnownLocationAddress`: String (Optional)
+  * `routeProgress`: Object
+    * `nextStopId`: ObjectId -> `Stop` (Optional)
+    * `etaMinutes`: Number (Optional integer)
+    * `distanceRemainingKm`: Number (Optional decimal)
+    * `isOffRoute`: Boolean (Default `false`)
+  * `status`: Enum (`"LIVE" | "IDLE" | "OFFLINE"`, default `"LIVE"`)
+* **Indexes**:
+  * `{ vehicleId: 1, timestamp: -1 }`
+  * `{ routeId: 1, timestamp: -1 }`
+
+#### 80. `MaintenanceRecord`
+Service, fuel, repair, and compliance renewal ledger for fleet vehicles.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `vehicleId`: ObjectId -> `Vehicle` (Required, indexed)
+  * `maintenanceType`: Enum (`"SERVICE_SCHEDULE" | "FUEL_LOG" | "REPAIR" | "INSURANCE_RENEWAL" | "FITNESS_RENEWAL" | "OTHER"`)
+  * `serviceDate`: Date (Required)
+  * `odometerReadingKm`: Number (Required)
+  * `costAmount`: Number (Required, min 0)
+  * `serviceProvider`: String (Required garage/workshop name)
+  * `description`: String (Required)
+  * `nextScheduledDate`: Date (Optional)
+  * `nextScheduledOdometerKm`: Number (Optional)
+  * `fuelDetails`: Object (Optional when maintenanceType is FUEL_LOG)
+    * `liters`: Number
+    * `costPerLiter`: Number
+    * `fuelType`: Enum (`"DIESEL" | "PETROL" | "CNG" | "EV"`)
+  * `status`: Enum (`"COMPLETED" | "SCHEDULED" | "IN_PROGRESS" | "CANCELLED"`, default `"COMPLETED"`)
+  * `createdBy`: ObjectId -> `User`
+  * `updatedBy`: ObjectId -> `User`
+  * `createdAt`: Date
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ vehicleId: 1, serviceDate: -1 }`
+  * `{ maintenanceType: 1, status: 1 }`
+
+#### 81. `TransportSummary`
+Aggregated materialized cache for fleet and transport KPIs.
+* **Fields**:
+  * `_id`: ObjectId
+  * `schoolId`: String (Indexed, required, default `"LAPS-GOHAD"`)
+  * `academicSessionId`: ObjectId -> `AcademicSession` (Required, unique index)
+  * `totalVehicles`: Number (Default 0)
+  * `activeVehicles`: Number (Default 0)
+  * `inMaintenanceVehicles`: Number (Default 0)
+  * `totalDrivers`: Number (Default 0)
+  * `totalRoutes`: Number (Default 0)
+  * `totalStops`: Number (Default 0)
+  * `totalAssignedStudents`: Number (Default 0)
+  * `totalFleetCapacity`: Number (Default 0)
+  * `overallOccupancyPercentage`: Number (Default 0)
+  * `vehicleUtilization`: Array of Objects
+    * `vehicleId`: ObjectId -> `Vehicle`
+    * `registrationNumber`: String
+    * `capacity`: Number
+    * `activeAssignments`: Number
+    * `occupancyPercentage`: Number
+    * `status`: String
+  * `routeUtilization`: Array of Objects
+    * `routeId`: ObjectId -> `Route`
+    * `routeName`: String
+    * `totalStops`: Number
+    * `totalStudents`: Number
+    * `assignedVehicleId`: ObjectId -> `Vehicle`
+  * `maintenanceSummary`: Object
+    * `totalSpendYearToDate`: Number
+    * `pendingRenewalsCount`: Number
+    * `vehiclesDueForServiceCount`: Number
+  * `lastCalculatedAt`: Date (Default `Date.now`)
+* **Indexes**:
+  * `{ schoolId: 1, academicSessionId: 1 }` (Unique)
+
 ---
 
 ## 4. Deep-Dive: Academic History & Promotion Strategy

@@ -62,5 +62,13 @@ export * from './SchoolEvent';
 export * from './CalendarEvent';
 export * from './AcademicCalendarSummary';
 export * from './EventReminder';
+export * from './Vehicle';
+export * from './Driver';
+export * from './Route';
+export * from './Stop';
+export * from './StudentTransportAssignment';
+export * from './GpsLocation';
+export * from './MaintenanceRecord';
+export * from './TransportSummary';
 
 

@@ -178,7 +178,7 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 12 — Event & Holiday Calendar (IN PROGRESS / PLANNING)
+### Phase 12 — Event & Holiday Calendar (COMPLETED & VERIFIED)
 * **Objective**: Design and build a comprehensive Event & Holiday Calendar system providing a unified view of holidays, school events, exams, and homework deadlines. Enable recurring holidays, event reminders, and attendance block integration.
 * **Dependencies**: Phase 11.
 * **Deliverables**:
@@ -193,7 +193,23 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 * **Tests Required**: Verification suite `TEST-CAL-001` to `TEST-CAL-010` covering holiday creation, overlap prevention, school event visibility scoping, teacher class scoping, calendar feed filtering, reminders, recurring holiday generation, academic term calendar summary calculations, attendance blocks, and cross-module references.
 ---
 
-### Phase 13 — Public School Website (SEO-Optimized Presentation)
+### Phase 13 — Transport, Fleet & GPS Tracking Module (IN PROGRESS / PLANNING)
+* **Objective**: Design and build a comprehensive Transport, Fleet & GPS Tracking system supporting fleet vehicle management, driver profile & license compliance, geocoded bus route & stop sequencing, student transport assignments, simulated live GPS telemetry, vehicle maintenance logs, and transport KPI summary analytics.
+* **Dependencies**: Phase 12.
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod schemas and TypeScript types for `Vehicle`, `Driver`, `Route`, `Stop`, `StudentTransportAssignment`, `GpsLocation`, `MaintenanceRecord`, and `TransportSummary`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#74` to `#81`; REST endpoints under `/api/v1/vehicles`, `/api/v1/drivers`, `/api/v1/routes`, `/api/v1/stops`, `/api/v1/assignments`, `/api/v1/gps`, `/api/v1/maintenance`, and `/api/v1/transport-summary`; strict RBAC scoping for drivers, teachers, students, and guardians.
+  * **ERP Web UI (`apps/web`)**: Transport Dashboard (`/erp/transport/dashboard`), Vehicle Management (`/erp/transport/vehicles`), Driver Management (`/erp/transport/drivers`), Route Builder (`/erp/transport/routes`), Stop Management (`/erp/transport/stops`), Assignment Management (`/erp/transport/assignments`), GPS Dashboard (`/erp/transport/gps`), Maintenance Dashboard (`/erp/transport/maintenance`), and Transport Analytics (`/erp/transport/analytics`).
+* **Acceptance Criteria**:
+  * Complete lifecycle management for vehicles, drivers, routes, stops, and student assignments.
+  * Vehicle capacity validation prevents over-assignment (`409 Conflict`).
+  * Self-service telemetry ingestion and live tracking coordinates without any third-party GPS or mapping dependency.
+  * Role-based isolation ensures students/guardians see only their assigned bus location and ETA.
+* **Tests Required**: Verification suite `TEST-TRN-001` to `TEST-TRN-010` covering vehicle/driver/route/stop creation, assignment capacity checks, duplicate assignment prevention, maintenance scheduling, GPS telemetry ingestion & ETA retrieval, teacher bus duty scoping, student/guardian isolation, and transport analytics KPI calculation.
+
+---
+
+### Phase 14 — Public School Website (SEO-Optimized Presentation)
 * **Objective**: Build responsive public school website (`Home`, `About`, `Academics`, `Facilities`, `Contact`, `Admissions`) with Little Angels School branding.
 * **Dependencies**: Phase 1.
 * **Deliverables**: Public pages, responsive navigation bar, hero sections, Google Maps embed, SEO title/meta tags, and portal login CTA.
@@ -202,25 +218,25 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 14 — Website Content Management System (CMS)
+### Phase 15 — Website Content Management System (CMS)
 * **Objective**: Build Admin-facing dynamic CMS controls for homepage hero banners, announcements, principal message, and photo gallery albums.
-* **Dependencies**: Phase 13.
+* **Dependencies**: Phase 14.
 * **Deliverables**: `GalleryAlbum`, `GalleryImage` models and APIs; Admin CMS UI panel; Cloudinary CDN image upload integration.
 * **Acceptance Criteria**: Principal updates homepage welcome text and uploads Annual Sports Day photo gallery; public website reflects changes instantly.
 * **Tests Required**: CMS content update integration test; image upload compression verification.
 
 ---
 
-### Phase 15 — Online Admission Enquiry Pipeline
+### Phase 16 — Online Admission Enquiry Pipeline
 * **Objective**: Build public online admission inquiry form and Admin/Receptionist Kanban pipeline management dashboard.
-* **Dependencies**: Phase 13.
+* **Dependencies**: Phase 14.
 * **Deliverables**: `AdmissionEnquiry` model and APIs; Public web enquiry form; Receptionist Kanban board (`New` -> `Admitted`).
 * **Acceptance Criteria**: Prospective parent submits inquiry on website; lead appears instantly in Admin Kanban board; staff can log follow-up notes.
 * **Tests Required**: Enquiry form validation test; status progression API test.
 
 ---
 
-### Phase 16 — Historical Academic Promotion & Session Transition Wizard
+### Phase 17 — Historical Academic Promotion & Session Transition Wizard
 * **Objective**: Build the end-of-year Student Promotion Wizard that creates new session enrollments while preserving historical academic records.
 * **Dependencies**: Phase 10, Phase 11.
 * **Deliverables**: `/api/v1/students/:id/promote` transaction endpoint; Admin UI session transition wizard.
@@ -229,36 +245,36 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 17 — Final Security Hardening, Penetration Testing & Complete Audit Verification
+### Phase 18 — Final Security Hardening, Penetration Testing & Complete Audit Verification
 * **Objective**: Perform comprehensive security auditing, penetration testing (NoSQL injection, CORS/CSRF boundary checks, rate-limit throttling tests), and verify that all sensitive administrative operations trigger immutable `AuditLog` writes.
-* **Dependencies**: All functional modules (Phases 1-16).
+* **Dependencies**: All functional modules (Phases 1-17).
 * **Deliverables**: Security Penetration & Hardening Audit Report; Verified `AuditLog` coverage across all sensitive mutations; Production CORS/CSP policy tune-up.
 * **Acceptance Criteria**: All automated penetration tests pass; zero IDOR or privilege escalation vulnerabilities detected; 100% of sensitive financial/academic mutations produce immutable audit log entries.
 * **Tests Required**: Execution of full security test matrix (`TEST-AUTH-001..005`) and OWASP penetration test suites.
 
 ---
 
-### Phase 18 — Complete Automated Test Suite & CI/CD Pipeline
+### Phase 19 — Complete Automated Test Suite & CI/CD Pipeline
 * **Objective**: Implement automated CI/CD GitHub Actions pipeline running Vitest unit tests, Supertest integration tests, and Playwright E2E tests.
-* **Dependencies**: Phase 17.
+* **Dependencies**: Phase 18.
 * **Deliverables**: Full test codebase coverage for all critical flows (`TEST-FLOW-HW`, `ATT`, `EXAM`, `FEE`, `PROMO`); GitHub Actions `.yml` pipeline.
 * **Acceptance Criteria**: All automated tests pass in CI/CD pipeline on Linux/Windows containers; code coverage meets >= 80% on domain services.
 * **Tests Required**: Execution of the complete automated testing pyramid.
 
 ---
 
-### Phase 19 — Performance Optimization & Accessibility (a11y)
+### Phase 20 — Performance Optimization & Accessibility (a11y)
 * **Objective**: Optimize frontend bundle splitting, TanStack Query caching, database indexes, and ensure WCAG 2.1 AA accessibility compliance.
-* **Dependencies**: Phase 18.
+* **Dependencies**: Phase 19.
 * **Deliverables**: Optimized production bundles; Lighthouse report >= 90 across Performance, Accessibility, and SEO.
 * **Acceptance Criteria**: All interactive form controls have accessible ARIA labels; database queries execute in < 50ms with compound indexes.
 * **Tests Required**: Lighthouse automated performance and accessibility audits.
 
 ---
 
-### Phase 20 — Production Deployment & User Handover
+### Phase 21 — Production Deployment & User Handover
 * **Objective**: Prepare production Docker container images, NGINX SSL reverse proxy config, automated MongoDB backup scripts, and administrator handover manuals.
-* **Dependencies**: Phase 19.
+* **Dependencies**: Phase 20.
 * **Deliverables**: Production `docker-compose.prod.yml`, NGINX SSL config, automated daily DB backup script, and Administrator Operational Guide.
 * **Acceptance Criteria**: Application deployed securely with SSL termination; database daily backups verified; zero console runtime errors in production.
 * **Tests Required**: Production smoke testing and SSL certificate validation.

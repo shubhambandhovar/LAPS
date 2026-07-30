@@ -136,7 +136,6 @@ const ReportCardTemplateSchema = new Schema<IReportCardTemplateDocument>(
 
 ReportCardTemplateSchema.index({ name: 1, academicSessionId: 1 }, { unique: true });
 ReportCardTemplateSchema.index({ academicSessionId: 1, isDefault: 1 });
-ReportCardTemplateSchema.index({ status: 1 });
 
 export const ReportCardTemplate = model<IReportCardTemplateDocument>(
   'ReportCardTemplate',

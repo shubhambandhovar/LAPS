@@ -394,3 +394,26 @@ In Phase 12, automated verification in `apps/api/src/__tests__/calendar.test.ts`
    * Integration test: Attempt to mark attendance on a date recorded as a mandatory `Holiday` -> Asserts `409 Conflict` in the Attendance module.
 10. **Calendar Event Cross-Module References (`TEST-CAL-010`)**:
     * Query `CalendarEvent` -> Asserts correctly serialized `referenceModule` and `referenceId` for Homework, Exams, and Holidays without data duplication.
+
+### 3.15. Transport, Fleet & GPS Tracking Verification Suite (`TEST-TRN-001` through `TEST-TRN-010` — Phase 13)
+In Phase 13, automated verification in `apps/api/src/__tests__/transport.test.ts` executes the following 10-test verification suite:
+1. **Create Vehicle, Driver, Route, and Stop (`TEST-TRN-001`)**:
+   * Admin creates a `Vehicle`, `Driver`, `Route`, and `Stop` -> Asserts successful creation, registration number uniqueness, and license expiry validation.
+2. **Student Transport Assignment (`TEST-TRN-002`)**:
+   * Admin assigns a student (`POST /api/v1/assignments`) to a Route, Stop, and Vehicle -> Asserts successful assignment creation and automatic increment of cached `studentCount` on the Stop document.
+3. **Duplicate Assignment Prevention (`TEST-TRN-003`)**:
+   * Admin attempts to create a second active assignment for a student in the same academic session -> Asserts rejection with `409 Business Rule Violation`.
+4. **Vehicle Capacity Validation (`TEST-TRN-004`)**:
+   * Admin attempts to assign a student to a vehicle whose active assignments already equal its maximum `capacity` -> Asserts rejection with `409 Conflict` ("Vehicle capacity exceeded").
+5. **Maintenance Scheduling (`TEST-TRN-005`)**:
+   * Admin logs a `MaintenanceRecord` (`SERVICE_SCHEDULE` or `REPAIR`) for a vehicle -> Asserts record creation and verified status transition of Vehicle to `"MAINTENANCE"` when appropriate.
+6. **GPS Telemetry & Live Tracking (`TEST-TRN-006`)**:
+   * Simulate ERP telemetry ingestion (`POST /api/v1/gps/telemetry`) with latitude, longitude, and speed -> Query `GET /api/v1/gps/live` -> Asserts real-time coordinate retrieval and ETA calculation.
+7. **Teacher Dismissal & Bus Duty Scoping (`TEST-TRN-007`)**:
+   * Teacher queries student transport assignments -> Asserts teacher can view assignments for students in their assigned classes/sections, but receives `403 RBAC_PERMISSION_DENIED` for unassigned classes or administrative mutations.
+8. **Student & Guardian RBAC Isolation (`TEST-TRN-008`)**:
+   * Student/Guardian queries `/api/v1/assignments` and `/api/v1/gps/live` -> Asserts only their own/ward's active assignment and bus location are returned; attempts to query another student's ID return `403 RBAC_PERMISSION_DENIED`.
+9. **Transport Analytics & Summary KPI Calculation (`TEST-TRN-009`)**:
+   * Query `/api/v1/transport-summary` -> Asserts accurate calculation of total vehicles, active routes, total assigned students, overall occupancy percentage, and maintenance spend.
+10. **Route Overlap & Archiving Validation (`TEST-TRN-010`)**:
+    * Admin archives a `Route` -> Asserts route status transitions to `"ARCHIVED"` and subsequent attempts to assign new students to the archived route are rejected with `400 Bad Request`.

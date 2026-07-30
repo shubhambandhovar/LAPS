@@ -54,6 +54,14 @@ import scheduledNotificationRoutes from './scheduledNotification.routes';
 import eventRoutes from './events.routes';
 import reminderRoutes from './reminders.routes';
 import calendarViewRoutes from './calendar.routes';
+import vehicleRoutes from './vehicle.routes';
+import driverRoutes from './driver.routes';
+import routeRoutes from './route.routes';
+import stopRoutes from './stop.routes';
+import assignmentRoutes from './assignment.routes';
+import gpsRoutes from './gps.routes';
+import maintenanceRoutes from './maintenance.routes';
+import transportSummaryRoutes from './transportSummary.routes';
 
 const router = Router();
 
@@ -135,6 +143,16 @@ router.use('/scheduled-notifications', scheduledNotificationRoutes);
 router.use('/calendar', calendarViewRoutes);
 router.use('/events', eventRoutes);
 router.use('/reminders', reminderRoutes);
+
+// Phase 13: Mount Transport, Fleet & GPS Tracking endpoints
+router.use('/vehicles', vehicleRoutes);
+router.use('/drivers', driverRoutes);
+router.use('/routes', routeRoutes);
+router.use('/stops', stopRoutes);
+router.use('/assignments', assignmentRoutes);
+router.use('/gps', gpsRoutes);
+router.use('/maintenance', maintenanceRoutes);
+router.use('/transport-summary', transportSummaryRoutes);
 
 export default router;
 

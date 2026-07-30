@@ -478,15 +478,42 @@ Standard collection endpoints accept uniform URL query parameters:
 * `PATCH  /api/v1/scheduled-notifications/:id/cancel`: (Admin) Cancel a pending scheduled notification job (`status: "CANCELLED"`).
 
 
-### 5.13. Public CMS & Website Content (`/api/v1/cms`)
+### 5.13. Event & Holiday Calendar (`/api/v1/calendar`, `/api/v1/events`, `/api/v1/holidays`, `/api/v1/reminders`)
+
+#### A. Unified Calendar (`/api/v1/calendar`)
+* `GET    /api/v1/calendar`: Retrieve unified calendar feed combining Holidays, Events, Exams, and Homework for the requested date range.
+* `GET    /api/v1/calendar/my`: Retrieve filtered personalized calendar feed for the logged-in user.
+* `GET    /api/v1/calendar/summary`: Retrieve `AcademicCalendarSummary` analytics for the specified session or term (Working Days, Teaching Days, Holidays).
+
+#### B. School Events (`/api/v1/events`)
+* `GET    /api/v1/events`: List school events (filterable by `eventType`, `startDate`, `endDate`, `visibility`).
+* `POST   /api/v1/events`: (Admin/Teacher) Create a new school event (Teachers can only create events for their classes).
+* `GET    /api/v1/events/:id`: Retrieve detailed event information.
+* `PATCH  /api/v1/events/:id`: Update event details.
+* `DELETE /api/v1/events/:id`: Delete a school event.
+
+#### C. Holidays (`/api/v1/holidays`)
+* `GET    /api/v1/holidays`: List holidays for an academic session.
+* `POST   /api/v1/holidays`: (Admin) Add a new holiday (supports multi-day and recurring generation).
+* `GET    /api/v1/holidays/:id`: Retrieve holiday details.
+* `PATCH  /api/v1/holidays/:id`: Update holiday details.
+* `DELETE /api/v1/holidays/:id`: Delete a holiday.
+
+#### D. Event Reminders (`/api/v1/reminders`)
+* `GET    /api/v1/reminders`: List upcoming event reminders for the current user.
+* `POST   /api/v1/reminders`: Set a personal or broadcast reminder for an event.
+* `DELETE /api/v1/reminders/:id`: Cancel an event reminder.
+
+
+### 5.14. Public CMS & Website Content (`/api/v1/cms`)
 * `GET  /api/v1/cms/gallery/albums`: Public/Admin view photo gallery albums.
 * `POST /api/v1/cms/gallery/albums`: Admin create gallery album and upload images.
 * `PATCH /api/v1/cms/homepage`: Update homepage hero banners, announcement ticker, and principal message.
 
-### 5.14. Admission Enquiries (`/api/v1/admissions`)
+### 5.15. Admission Enquiries (`/api/v1/admissions`)
 * `POST /api/v1/admissions/enquiries`: Public website endpoint to submit online admission inquiry.
 * `GET  /api/v1/admissions/enquiries`: Admin/Receptionist paginated Kanban view of enquiries.
 * `PATCH /api/v1/admissions/enquiries/:id/status`: Update inquiry pipeline status and append follow-up notes.
 
-### 5.15. Audit System & Security Logs (`/api/v1/audit-logs`)
+### 5.16. Audit System & Security Logs (`/api/v1/audit-logs`)
 * `GET  /api/v1/audit-logs`: Super Admin search across immutable audit logs (filterable by actor, action code, date range, entity).

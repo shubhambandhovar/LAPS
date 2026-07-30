@@ -371,3 +371,26 @@ In Phase 11, automated verification in `apps/api/src/__tests__/communication.tes
     * Simulate a failed delivery log entry (`status: "FAILED"`, `failureReason`), invoke `POST /api/v1/delivery-logs/:id/retry` -> Asserts retry count increments and delivery status updates.
 15. **Self-Service RBAC Isolation (`TEST-COMM-015`)**:
     * Student1 attempts to read, mark read, archive, or delete Student2's notification or modify Student2's preferences -> Asserts rejection with `403 RBAC_PERMISSION_DENIED`.
+
+### 3.14. Event & Holiday Calendar Verification Suite (`TEST-CAL-001` through `TEST-CAL-010` — Phase 12)
+In Phase 12, automated verification in `apps/api/src/__tests__/calendar.test.ts` executes the following 10-test verification suite:
+1. **Create Holiday (`TEST-CAL-001`)**:
+   * Admin creates `Holiday` (`POST /api/v1/holidays`) -> Asserts successful creation, multi-day handling, and correctly triggers `CalendarEvent` sync.
+2. **Holiday Overlap Prevention (`TEST-CAL-002`)**:
+   * Admin attempts to create a Holiday overlapping an existing one -> Asserts `409 Conflict`.
+3. **Create School Event (`TEST-CAL-003`)**:
+   * Admin creates a `SchoolEvent` with `visibility: "SCHOOL_WIDE"` -> Asserts successful creation and sync to `CalendarEvent`.
+4. **Teacher Class Scoping for Events (`TEST-CAL-004`)**:
+   * Teacher creates an event for an assigned class -> Asserts success. Attempts to create for an unassigned class -> Asserts `403 RBAC_PERMISSION_DENIED`.
+5. **Audience-Aware Calendar Feed (`TEST-CAL-005`)**:
+   * Student queries `GET /api/v1/calendar` -> Asserts response contains global holidays, school-wide events, and class-specific events, but excludes events belonging to other classes.
+6. **Set Event Reminder (`TEST-CAL-006`)**:
+   * Student sets an `EventReminder` (`POST /api/v1/reminders`) -> Asserts reminder is scheduled correctly.
+7. **Recurring Holiday Generation (`TEST-CAL-007`)**:
+   * Admin triggers recurring holiday creation -> Asserts holiday and `CalendarEvent` documents are generated correctly across the academic term.
+8. **Academic Term Calendar Summary (`TEST-CAL-008`)**:
+   * Query `GET /api/v1/calendar/summary` -> Asserts correct aggregation of working days, holidays, teaching days, and examination days based on `CalendarEvent` records.
+9. **Attendance on Holiday Block (`TEST-CAL-009`)**:
+   * Integration test: Attempt to mark attendance on a date recorded as a mandatory `Holiday` -> Asserts `409 Conflict` in the Attendance module.
+10. **Calendar Event Cross-Module References (`TEST-CAL-010`)**:
+    * Query `CalendarEvent` -> Asserts correctly serialized `referenceModule` and `referenceId` for Homework, Exams, and Holidays without data duplication.

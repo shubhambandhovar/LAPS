@@ -76,6 +76,13 @@ export const PortalHomeShell: React.FC = () => {
       icon: UserCheck,
       color: 'bg-rose-50 text-rose-600',
     },
+    {
+      title: 'Event & Holiday Calendar',
+      desc: 'Unified academic calendar, holidays, school events, and reminders.',
+      to: '/calendar',
+      icon: Calendar,
+      color: 'bg-purple-50 text-purple-600',
+    },
   ];
 
   return (

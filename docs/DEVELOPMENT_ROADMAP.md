@@ -178,12 +178,19 @@ Security controls are **never postponed**. From Phase 1 through Phase 16, every 
 
 ---
 
-### Phase 12 — Event & Holiday Calendar Management
-* **Objective**: Build interactive school event calendar items (`Event`), institutional holidays (`Holiday`), and campus schedule board.
+### Phase 12 — Event & Holiday Calendar (IN PROGRESS / PLANNING)
+* **Objective**: Design and build a comprehensive Event & Holiday Calendar system providing a unified view of holidays, school events, exams, and homework deadlines. Enable recurring holidays, event reminders, and attendance block integration.
 * **Dependencies**: Phase 11.
-* **Deliverables**: `Event` and `Holiday` models and APIs; Calendar interactive view; Event RSVP/Visibility scoping.
-* **Acceptance Criteria**: Events and holidays display dynamically on the school calendar and can be scoped as public website events or internal portal events.
-* **Tests Required**: Event creation, holiday overlap checking, and visibility scoping unit/integration tests.
+* **Deliverables**:
+  * **Shared Schemas & Types (`@laps/shared`)**: Zod schemas and TypeScript types for `Holiday`, `SchoolEvent`, `CalendarEvent`, `AcademicCalendarSummary`, and `EventReminder`.
+  * **Backend Domain Models & APIs (`apps/api`)**: Collections `#63` to `#67`; REST endpoints under `/api/v1/calendar`, `/api/v1/events`, `/api/v1/holidays`, and `/api/v1/reminders`; strict RBAC scoping for Teachers and audience-aware event visibility.
+  * **ERP Web UI (`apps/web`)**: Calendar Dashboard (`/erp/calendar/dashboard`), Holiday Management (`/erp/calendar/holidays`), Event Management (`/erp/calendar/events`), Calendar Analytics (`/erp/calendar/analytics`), and Event Reminders (`/erp/calendar/reminders`).
+* **Acceptance Criteria**:
+  * The unified calendar feed seamlessly aggregates holidays, events, exams, and homework.
+  * Role-based visibility ensures students only see events published for their role or enrolled classes.
+  * Holiday scheduling automatically blocks attendance marking for affected days.
+  * Teachers can only create events for their assigned classes.
+* **Tests Required**: Verification suite `TEST-CAL-001` to `TEST-CAL-010` covering holiday creation, overlap prevention, school event visibility scoping, teacher class scoping, calendar feed filtering, reminders, recurring holiday generation, academic term calendar summary calculations, attendance blocks, and cross-module references.
 ---
 
 ### Phase 13 — Public School Website (SEO-Optimized Presentation)

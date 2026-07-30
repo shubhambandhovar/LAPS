@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../lib/api';
 import {
-  Calendar,
   Clock,
   Plus,
   XCircle,
   AlertCircle,
-  CheckCircle2,
   RefreshCw,
-  Send,
 } from 'lucide-react';
 
 interface ScheduledJobRecord {

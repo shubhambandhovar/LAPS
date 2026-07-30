@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../lib/api';
 import {
   Send,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
   RefreshCw,
   AlertCircle,
   RotateCcw,

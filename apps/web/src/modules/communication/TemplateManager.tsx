@@ -6,8 +6,6 @@ import {
   Eye,
   FileCode,
   AlertCircle,
-  CheckCircle,
-  RefreshCw,
 } from 'lucide-react';
 
 interface TemplateRecord {

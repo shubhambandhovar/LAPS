@@ -188,6 +188,28 @@ The Communication & Notification System (`/api/v1/notifications`, `/api/v1/notic
 4. **Notice Audience Filtering**:
    - `GET /api/v1/notices` automatically filters notices based on the current user's role (`targetRoles` includes user role or `"ALL"`) and class/section membership. Expired notices (`expiryDate < now`) and draft/archived notices are excluded from general user queries.
 
+### 3.11. Event & Holiday Calendar Scoping
+
+The Event & Holiday Calendar module (`/api/v1/calendar`, `/api/v1/events`, `/api/v1/holidays`, `/api/v1/reminders`) implements audience-scoped filtering:
+
+#### Dynamic Permission Matrix for Calendar:
+
+| Role | Unified Calendar | School Events (`/events`) | Holidays (`/holidays`) | Reminders (`/reminders`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **`SUPER_ADMIN`** | VIEW ALL | CREATE, EDIT, DELETE ALL | CREATE, EDIT, DELETE | MODIFY OWN |
+| **`SCHOOL_ADMIN`** | VIEW ALL | CREATE, EDIT, DELETE ALL | CREATE, EDIT, DELETE | MODIFY OWN |
+| **`TEACHER`** | VIEW (Self & Assigned) | CREATE (Assigned Classes only) | VIEW ONLY | MODIFY OWN |
+| **`STUDENT`** | VIEW (Enrolled Classes) | VIEW (Role/Class Audience) | VIEW ONLY | MODIFY OWN |
+| **`GUARDIAN`** | VIEW (Ward's Classes) | VIEW (Role/Class Audience) | VIEW ONLY | MODIFY OWN |
+
+#### Architectural Scoping Rules for Calendar:
+1. **Teacher Event Authoring**:
+   - Teachers can only create `SchoolEvent`s targeted to their assigned classes/sections (`enforceTeacherEventScope`).
+2. **Audience-Aware Calendar Feed**:
+   - The unified `/api/v1/calendar` endpoint automatically filters `CalendarEvent` documents. Students only see events and exam schedules for their own classes.
+3. **Holiday Management**:
+   - Only `SUPER_ADMIN` and `SCHOOL_ADMIN` can modify the school's global `Holiday` list and `AcademicCalendarSummary`.
+
 ---
 
 ## 4. Permission Middleware Enforcement Contract

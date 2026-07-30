@@ -10,6 +10,12 @@ export interface IHoliday {
   isOptionalHoliday: boolean;
   affectsAttendance: boolean;
   description?: string;
+  isRecurring?: boolean;
+  recurrenceRule?: {
+    frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+    count?: number;
+    until?: string;
+  };
   status: EntityStatus;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
@@ -36,7 +42,7 @@ const HolidaySchema = new Schema<IHolidayDocument>(
     },
     holidayType: {
       type: String,
-      enum: ['NATIONAL', 'STATE', 'SCHOOL', 'OPTIONAL', 'EMERGENCY_CLOSURE'],
+      enum: ['NATIONAL', 'STATE', 'SCHOOL', 'OPTIONAL', 'EMERGENCY_CLOSURE', 'MANDATORY'],
       required: true,
       index: true,
     },
@@ -61,6 +67,22 @@ const HolidaySchema = new Schema<IHolidayDocument>(
     description: {
       type: String,
       trim: true,
+    },
+    isRecurring: {
+      type: Boolean,
+      default: false,
+    },
+    recurrenceRule: {
+      frequency: {
+        type: String,
+        enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'],
+      },
+      count: {
+        type: Number,
+      },
+      until: {
+        type: String,
+      },
     },
     status: {
       type: String,

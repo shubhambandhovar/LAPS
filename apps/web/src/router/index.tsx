@@ -67,6 +67,13 @@ import {
   ScheduledNotifications,
   NotificationPreferences,
 } from '../modules/communication';
+import {
+  CalendarDashboard,
+  HolidayManagement,
+  EventManagement,
+  CalendarAnalytics,
+  EventReminders,
+} from '../modules/calendar';
 
 const router = createBrowserRouter([
   {
@@ -271,6 +278,27 @@ const router = createBrowserRouter([
       {
         path: 'communication/preferences',
         element: <NotificationPreferences />,
+      },
+      // Phase 12 Event & Holiday Calendar Routes
+      {
+        path: 'calendar',
+        element: <CalendarDashboard />,
+      },
+      {
+        path: 'calendar/holidays',
+        element: <HolidayManagement />,
+      },
+      {
+        path: 'calendar/events',
+        element: <EventManagement />,
+      },
+      {
+        path: 'calendar/analytics',
+        element: <CalendarAnalytics />,
+      },
+      {
+        path: 'calendar/reminders',
+        element: <EventReminders />,
       },
     ],
   },

@@ -12,6 +12,11 @@ import { AcademicCalendarEvent } from '../models/AcademicCalendarEvent';
 import { WorkingDayRule } from '../models/WorkingDayRule';
 import { Holiday } from '../models/Holiday';
 import { AcademicSession } from '../models/AcademicSession';
+import { CalendarEvent } from '../models/CalendarEvent';
+import { AcademicCalendarSummary } from '../models/AcademicCalendarSummary';
+import { Exam } from '../models/Exam';
+import { Student } from '../models/Student';
+import { Enrollment } from '../models/Enrollment';
 import { AppError } from '../utils/errors';
 import { sendSuccess } from '../utils/response';
 import mongoose from 'mongoose';
@@ -390,6 +395,16 @@ export async function createHoliday(req: Request, res: Response): Promise<void> 
     throw new AppError(404, ErrorCodes.RESOURCE_NOT_FOUND, 'Academic session not found');
   }
 
+  const overlapping = await Holiday.findOne({
+    academicSessionId: parseResult.data.academicSessionId,
+    status: 'ACTIVE',
+    startDate: { $lte: parseResult.data.endDate },
+    endDate: { $gte: parseResult.data.startDate },
+  }).exec();
+  if (overlapping) {
+    throw new AppError(409, ErrorCodes.DUPLICATE_RESOURCE, 'A holiday already exists in this date range');
+  }
+
   const userId = req.user?.id;
   if (!userId) {
     throw new AppError(401, ErrorCodes.AUTH_TOKEN_EXPIRED, 'Unauthorized');
@@ -401,7 +416,82 @@ export async function createHoliday(req: Request, res: Response): Promise<void> 
     updatedBy: userId,
   });
 
-  sendSuccess(res, 201, 'Holiday created successfully', newHoliday);
+  await CalendarEvent.create({
+    title: newHoliday.title,
+    description: newHoliday.description,
+    category: 'HOLIDAY',
+    startDate: new Date(newHoliday.startDate),
+    endDate: new Date(newHoliday.endDate),
+    isAllDay: true,
+    referenceModule: 'Holiday',
+    referenceId: newHoliday._id,
+    academicSessionId: newHoliday.academicSessionId,
+  });
+
+  const createdHolidays = [newHoliday];
+
+  if (parseResult.data.isRecurring && parseResult.data.recurrenceRule) {
+    const rule = parseResult.data.recurrenceRule;
+    const count = rule.count || 5;
+    const baseStart = new Date(newHoliday.startDate);
+    const baseEnd = new Date(newHoliday.endDate);
+    const diffMs = baseEnd.getTime() - baseStart.getTime();
+
+    for (let i = 1; i < count; i++) {
+      let nextStart = new Date(baseStart);
+      if (rule.frequency === 'WEEKLY') {
+        nextStart.setDate(nextStart.getDate() + 7 * i);
+      } else if (rule.frequency === 'MONTHLY') {
+        nextStart.setMonth(nextStart.getMonth() + i);
+      } else if (rule.frequency === 'YEARLY') {
+        nextStart.setFullYear(nextStart.getFullYear() + i);
+      } else {
+        nextStart.setDate(nextStart.getDate() + i);
+      }
+
+      if (rule.until && nextStart > new Date(rule.until)) {
+        break;
+      }
+
+      const nextEnd = new Date(nextStart.getTime() + diffMs);
+      const startStr = nextStart.toISOString().split('T')[0];
+      const endStr = nextEnd.toISOString().split('T')[0];
+
+      const overlapRec = await Holiday.findOne({
+        academicSessionId: parseResult.data.academicSessionId,
+        status: 'ACTIVE',
+        startDate: { $lte: endStr },
+        endDate: { $gte: startStr },
+      }).exec();
+
+      if (!overlapRec) {
+        const recHoliday = await Holiday.create({
+          ...parseResult.data,
+          startDate: startStr,
+          endDate: endStr,
+          title: parseResult.data.title,
+          createdBy: userId,
+          updatedBy: userId,
+        });
+
+        createdHolidays.push(recHoliday);
+
+        await CalendarEvent.create({
+          title: recHoliday.title,
+          description: recHoliday.description,
+          category: 'HOLIDAY',
+          startDate: new Date(recHoliday.startDate),
+          endDate: new Date(recHoliday.endDate),
+          isAllDay: true,
+          referenceModule: 'Holiday',
+          referenceId: recHoliday._id,
+          academicSessionId: recHoliday.academicSessionId,
+        });
+      }
+    }
+  }
+
+  sendSuccess(res, 201, 'Holiday created successfully', createdHolidays.length > 1 ? createdHolidays : newHoliday);
 }
 
 export async function updateHoliday(req: Request, res: Response): Promise<void> {
@@ -433,6 +523,16 @@ export async function updateHoliday(req: Request, res: Response): Promise<void> 
   holiday.updatedBy = new mongoose.Types.ObjectId(userId);
   await holiday.save();
 
+  await CalendarEvent.findOneAndUpdate(
+    { referenceModule: 'Holiday', referenceId: holiday._id },
+    {
+      title: holiday.title,
+      description: holiday.description,
+      startDate: new Date(holiday.startDate),
+      endDate: new Date(holiday.endDate),
+    }
+  );
+
   sendSuccess(res, 200, 'Holiday updated successfully', holiday);
 }
 
@@ -458,5 +558,116 @@ export async function archiveHoliday(req: Request, res: Response): Promise<void>
   holiday.updatedBy = new mongoose.Types.ObjectId(userId);
   await holiday.save();
 
+  await CalendarEvent.deleteMany({ referenceModule: 'Holiday', referenceId: holiday._id });
+
   sendSuccess(res, 200, 'Holiday archived successfully', holiday);
+}
+
+// Phase 12 Unified Calendar & Analytics Handlers
+export async function getUnifiedCalendar(req: Request, res: Response): Promise<void> {
+  const { academicSessionId, startDate, endDate, category } = req.query;
+
+  const filter: Record<string, unknown> = {};
+  if (academicSessionId) {
+    filter.academicSessionId = academicSessionId;
+  }
+  if (category && category !== 'ALL') {
+    filter.category = category;
+  }
+  if (startDate && endDate) {
+    const start = new Date(String(startDate));
+    const end = new Date(String(endDate));
+    filter.startDate = { $lte: end };
+    filter.endDate = { $gte: start };
+  }
+
+  let userClassId: string | undefined;
+  if (req.user?.role === 'STUDENT') {
+    const orConds: any[] = [{ _id: req.user.id }, { userId: req.user.id }];
+    if (req.user.profileRef) {
+      orConds.push({ _id: req.user.profileRef });
+    }
+    const student = await Student.findOne({
+      $or: orConds,
+    });
+    if (student) {
+      const enrollment = await Enrollment.findOne({
+        studentId: student._id,
+      });
+      if (enrollment) {
+        userClassId = enrollment.classId.toString();
+      }
+    }
+  }
+
+  const events = await CalendarEvent.find(filter)
+    .populate('targetClassIds', 'name code level')
+    .sort({ startDate: 1 })
+    .exec();
+
+  const filteredEvents = events.filter((evt) => {
+    if (['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'].includes(req.user?.role || '')) {
+      return true;
+    }
+    if (evt.category === 'HOLIDAY') {
+      return true;
+    }
+    if (userClassId && evt.targetClassIds && evt.targetClassIds.length > 0) {
+      const hasClass = evt.targetClassIds.some(
+        (c) => c._id.toString() === userClassId || c.toString() === userClassId
+      );
+      if (!hasClass) return false;
+    }
+    return true;
+  });
+
+  sendSuccess(res, 200, 'Unified calendar retrieved successfully', filteredEvents, {
+    page: 1,
+    limit: filteredEvents.length || 1,
+    totalRecords: filteredEvents.length,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+}
+
+export async function getCalendarSummary(req: Request, res: Response): Promise<void> {
+  const { academicSessionId, termId } = req.query;
+
+  if (!academicSessionId || !mongoose.Types.ObjectId.isValid(String(academicSessionId))) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Valid academicSessionId is required');
+  }
+
+  const holidayCount = await Holiday.countDocuments({
+    academicSessionId,
+    status: 'ACTIVE',
+  });
+
+  const examCount = await Exam.countDocuments({
+    academicSessionId,
+    status: { $ne: 'CANCELLED' },
+  });
+
+  const totalDays = 180;
+  const workingDays = Math.max(0, totalDays - holidayCount);
+  const examinationDays = examCount * 5;
+  const teachingDays = Math.max(0, workingDays - examinationDays);
+
+  const summary = await AcademicCalendarSummary.findOneAndUpdate(
+    {
+      academicSessionId,
+      ...(termId ? { termId } : {}),
+    },
+    {
+      totalDays,
+      workingDays,
+      holidayCount,
+      teachingDays,
+      examinationDays,
+      updatedAt: new Date(),
+    },
+    { new: true, upsert: true }
+  );
+
+  sendSuccess(res, 200, 'Academic calendar summary retrieved successfully', summary);
 }

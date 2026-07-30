@@ -8,7 +8,6 @@ import {
   Archive,
   FileText,
   AlertCircle,
-  Paperclip,
 } from 'lucide-react';
 
 interface NoticeRecord {

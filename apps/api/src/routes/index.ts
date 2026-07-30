@@ -51,9 +51,11 @@ import templateRoutes from './template.routes';
 import preferenceRoutes from './preference.routes';
 import deliveryLogRoutes from './deliveryLog.routes';
 import scheduledNotificationRoutes from './scheduledNotification.routes';
+import eventRoutes from './events.routes';
+import reminderRoutes from './reminders.routes';
+import calendarViewRoutes from './calendar.routes';
 
 const router = Router();
-
 
 // Phase 1 Foundation: Mount Health Check endpoint
 router.use('/health', healthRoutes);
@@ -129,6 +131,12 @@ router.use('/preferences', preferenceRoutes);
 router.use('/delivery-logs', deliveryLogRoutes);
 router.use('/scheduled-notifications', scheduledNotificationRoutes);
 
+// Phase 12: Mount Event & Holiday Calendar endpoints
+router.use('/calendar', calendarViewRoutes);
+router.use('/events', eventRoutes);
+router.use('/reminders', reminderRoutes);
+
 export default router;
+
 
 

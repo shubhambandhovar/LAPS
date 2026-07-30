@@ -1782,9 +1782,95 @@ Queue table for immediate, scheduled, and recurring notifications.
 
 ---
 
-### 3.12. CMS, Admissions & Audit Log Collections
+### 3.12. Event & Holiday Calendar Collections
 
-#### 63. `Event`
+#### 63. `Holiday`
+Official school holidays.
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String (`"Diwali"`, `"Summer Vacation"`)
+  * `type`: Enum (`"NATIONAL" | "STATE" | "SCHOOL" | "OPTIONAL" | "MANDATORY"`)
+  * `startDate`: Date
+  * `endDate`: Date
+  * `isMultiDay`: Boolean
+  * `description`: String
+  * `academicSessionId`: ObjectId -> `AcademicSession`
+* **Indexes**:
+  * `{ academicSessionId: 1, startDate: 1 }`
+  * `{ startDate: 1, endDate: 1 }`
+
+#### 64. `SchoolEvent`
+School activities and events.
+* **Fields**:
+  * `_id`: ObjectId
+  * `name`: String
+  * `eventType`: Enum (`"ACADEMIC" | "SPORTS" | "CULTURAL" | "PTM" | "MEETING" | "SEMINAR" | "COMPETITION" | "WORKSHOP" | "EXAM" | "FEE" | "CUSTOM"`)
+  * `startDate`: Date
+  * `endDate`: Date
+  * `isAllDay`: Boolean
+  * `description`: String
+  * `location`: String
+  * `visibility`: Enum (`"SCHOOL_WIDE" | "TEACHERS_ONLY" | "CLASS_SPECIFIC"`)
+  * `targetClassIds`: Array<ObjectId -> `Class`> (Optional)
+  * `targetSectionIds`: Array<ObjectId -> `Section`> (Optional)
+  * `academicSessionId`: ObjectId -> `AcademicSession`
+  * `createdBy`: ObjectId -> `User`
+* **Indexes**:
+  * `{ academicSessionId: 1, startDate: 1 }`
+  * `{ visibility: 1 }`
+
+#### 65. `CalendarEvent`
+Unified calendar feed model for cross-module integration (Attendance, Exams, Homework).
+* **Fields**:
+  * `_id`: ObjectId
+  * `title`: String
+  * `description`: String
+  * `category`: Enum (`"HOLIDAY" | "EVENT" | "EXAM" | "HOMEWORK" | "ATTENDANCE" | "FEE"`)
+  * `priority`: Enum (`"LOW" | "NORMAL" | "HIGH"`)
+  * `colorHex`: String (e.g., `"#FF5733"`)
+  * `startDate`: Date
+  * `endDate`: Date
+  * `isAllDay`: Boolean
+  * `referenceModule`: Enum (`"Holiday" | "SchoolEvent" | "Exam" | "Homework" | "Payment"`)
+  * `referenceId`: ObjectId
+  * `targetRoles`: Array<String>
+  * `academicSessionId`: ObjectId -> `AcademicSession`
+* **Indexes**:
+  * `{ academicSessionId: 1, startDate: 1 }`
+  * `{ referenceModule: 1, referenceId: 1 }`
+
+#### 66. `AcademicCalendarSummary`
+Aggregate analytics for academic terms.
+* **Fields**:
+  * `_id`: ObjectId
+  * `academicSessionId`: ObjectId -> `AcademicSession`
+  * `termId`: ObjectId -> `AcademicTerm` (Optional)
+  * `totalDays`: Number
+  * `workingDays`: Number
+  * `holidayCount`: Number
+  * `teachingDays`: Number
+  * `examinationDays`: Number
+  * `updatedAt`: Date
+* **Indexes**:
+  * `{ academicSessionId: 1, termId: 1 }`
+
+#### 67. `EventReminder`
+Scheduled reminders for calendar events.
+* **Fields**:
+  * `_id`: ObjectId
+  * `calendarEventId`: ObjectId -> `CalendarEvent`
+  * `reminderTime`: Date
+  * `channels`: Array<Enum (`"IN_APP" | "EMAIL" | "SMS"`)\>
+  * `status`: Enum (`"PENDING" | "SENT" | "FAILED"`)
+* **Indexes**:
+  * `{ status: 1, reminderTime: 1 }`
+  * `{ calendarEventId: 1 }`
+
+---
+
+### 3.13. CMS, Admissions & Audit Log Collections
+
+#### 68. `Event`
 School event calendar items.
 * **Fields**:
   * `_id`: ObjectId
@@ -1798,7 +1884,7 @@ School event calendar items.
 * **Indexes**:
   * `{ eventStartDate: 1 }`
 
-#### 64. `AdmissionEnquiry`
+#### 69. `AdmissionEnquiry`
 Prospective student enquiry leads.
 * **Fields**:
   * `_id`: ObjectId
@@ -1816,7 +1902,7 @@ Prospective student enquiry leads.
 * **Indexes**:
   * `{ status: 1, enquiryDate: -1 }`
 
-#### 65. `GalleryAlbum`
+#### 70. `GalleryAlbum`
 CMS photo gallery album container.
 * **Fields**:
   * `_id`: ObjectId
@@ -1827,7 +1913,7 @@ CMS photo gallery album container.
 * **Indexes**:
   * `{ isPublished: 1 }`
 
-#### 66. `GalleryImage`
+#### 71. `GalleryImage`
 Individual photos within a GalleryAlbum.
 * **Fields**:
   * `_id`: ObjectId
@@ -1838,7 +1924,7 @@ Individual photos within a GalleryAlbum.
 * **Indexes**:
   * `{ albumId: 1, order: 1 }`
 
-#### 67. `Document`
+#### 72. `Document`
 Secure repository for private student/teacher documents.
 * **Fields**:
   * `_id`: ObjectId
@@ -1853,7 +1939,7 @@ Secure repository for private student/teacher documents.
 * **Indexes**:
   * `{ ownerType: 1, ownerId: 1, documentType: 1 }`
 
-#### 68. `AuditLog`
+#### 73. `AuditLog`
 Immutable security and administrative audit ledger.
 * **Fields**:
   * `_id`: ObjectId

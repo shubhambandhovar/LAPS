@@ -58,5 +58,9 @@ export * from './NotificationTemplate';
 export * from './DeliveryLog';
 export * from './NotificationPreference';
 export * from './ScheduledNotification';
+export * from './SchoolEvent';
+export * from './CalendarEvent';
+export * from './AcademicCalendarSummary';
+export * from './EventReminder';
 
 

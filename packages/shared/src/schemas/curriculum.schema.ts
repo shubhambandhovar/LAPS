@@ -319,12 +319,18 @@ export const CreateHolidaySchema = z
   .object({
     academicSessionId: z.string().min(1, 'Academic session is required'),
     title: z.string().min(2, 'Title is required').max(100),
-    holidayType: z.enum(['NATIONAL', 'STATE', 'SCHOOL', 'OPTIONAL', 'EMERGENCY_CLOSURE']),
+    holidayType: z.enum(['NATIONAL', 'STATE', 'SCHOOL', 'OPTIONAL', 'EMERGENCY_CLOSURE', 'MANDATORY']),
     startDate: z.string().regex(dateRegex, 'Start date must be YYYY-MM-DD'),
     endDate: z.string().regex(dateRegex, 'End date must be YYYY-MM-DD'),
     isOptionalHoliday: z.boolean().default(false),
     affectsAttendance: z.boolean().default(true),
     description: z.string().max(500).optional(),
+    isRecurring: z.boolean().optional(),
+    recurrenceRule: z.object({
+      frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']),
+      count: z.number().int().positive().optional(),
+      until: z.string().optional(),
+    }).optional(),
     status: z.enum(['ACTIVE', 'ARCHIVED']).default('ACTIVE'),
   })
   .refine(
@@ -343,13 +349,20 @@ export type CreateHolidayInput = z.infer<typeof CreateHolidaySchema>;
 
 export const UpdateHolidaySchema = z.object({
   title: z.string().min(2).max(100).optional(),
-  holidayType: z.enum(['NATIONAL', 'STATE', 'SCHOOL', 'OPTIONAL', 'EMERGENCY_CLOSURE']).optional(),
+  holidayType: z.enum(['NATIONAL', 'STATE', 'SCHOOL', 'OPTIONAL', 'EMERGENCY_CLOSURE', 'MANDATORY']).optional(),
   startDate: z.string().regex(dateRegex, 'Start date must be YYYY-MM-DD').optional(),
   endDate: z.string().regex(dateRegex, 'End date must be YYYY-MM-DD').optional(),
   isOptionalHoliday: z.boolean().optional(),
   affectsAttendance: z.boolean().optional(),
   description: z.string().max(500).optional(),
+  isRecurring: z.boolean().optional(),
+  recurrenceRule: z.object({
+    frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']),
+    count: z.number().int().positive().optional(),
+    until: z.string().optional(),
+  }).optional(),
   status: z.enum(['ACTIVE', 'ARCHIVED']).optional(),
 });
 
 export type UpdateHolidayInput = z.infer<typeof UpdateHolidaySchema>;
+

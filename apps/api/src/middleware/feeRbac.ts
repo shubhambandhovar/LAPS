@@ -6,6 +6,7 @@ import { Enrollment } from '../models/Enrollment';
 import { StudentGuardian } from '../models/StudentGuardian';
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       feeTeacherClassIds?: string[];

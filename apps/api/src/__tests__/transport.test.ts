@@ -44,7 +44,7 @@ let studentToken: string;
 let guardianToken: string;
 let driverToken: string;
 
-let schoolId = 'LAPS-GOHAD';
+const schoolId = 'LAPS-GOHAD';
 let sessionId: string;
 let classId: string;
 let sectionId: string;

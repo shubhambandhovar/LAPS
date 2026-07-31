@@ -438,7 +438,7 @@ export async function createHoliday(req: Request, res: Response): Promise<void> 
     const diffMs = baseEnd.getTime() - baseStart.getTime();
 
     for (let i = 1; i < count; i++) {
-      let nextStart = new Date(baseStart);
+      const nextStart = new Date(baseStart);
       if (rule.frequency === 'WEEKLY') {
         nextStart.setDate(nextStart.getDate() + 7 * i);
       } else if (rule.frequency === 'MONTHLY') {

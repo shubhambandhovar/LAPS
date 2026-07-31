@@ -2295,3 +2295,52 @@ School-specific branding and theme configuration.
 *   `footerText` (String)
 *   `contactInfo` (SubDocument: address, phone, email, googleMapEmbedUrl)
 *   `timestamps` (createdAt, updatedAt)
+
+## 19. Reports & Analytics Module
+
+### ReportTemplate Collection
+* `_id`: ObjectId
+* `schoolId`: String
+* `name`: String
+* `category`: String (Academic, Fee, HR, etc.)
+* `module`: String
+* `configuration`: Object (columns, filters, sorting options)
+* `createdBy`: ObjectId (User)
+* `createdAt`: Date
+* `updatedAt`: Date
+
+### SavedReport Collection
+* `_id`: ObjectId
+* `schoolId`: String
+* `templateId`: ObjectId (ReportTemplate)
+* `name`: String
+* `description`: String
+* `parameters`: Object (saved filter values like academic session, date range)
+* `createdBy`: ObjectId (User)
+* `createdAt`: Date
+* `updatedAt`: Date
+
+### ScheduledReport Collection
+* `_id`: ObjectId
+* `schoolId`: String
+* `savedReportId`: ObjectId (SavedReport)
+* `frequency`: String (DAILY, WEEKLY, MONTHLY)
+* `cronExpression`: String
+* `recipients`: Array of Strings (email addresses)
+* `format`: String (PDF, EXCEL, CSV)
+* `status`: String (ACTIVE, PAUSED)
+* `nextRunAt`: Date
+* `createdBy`: ObjectId (User)
+* `createdAt`: Date
+* `updatedAt`: Date
+
+### ReportExecutionLog Collection
+* `_id`: ObjectId
+* `schoolId`: String
+* `scheduledReportId`: ObjectId (ScheduledReport)
+* `status`: String (SUCCESS, FAILED)
+* `executionTime`: Date
+* `durationMs`: Number
+* `errorMessage`: String
+* `fileUrl`: String (if saved to cloud storage)
+

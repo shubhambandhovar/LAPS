@@ -597,3 +597,20 @@ Standard collection endpoints accept uniform URL query parameters:
 | GET | `/api/v1/public/pages/:slug` | Get published page content & SEO | PUBLIC |
 | GET | `/api/v1/public/news` | Get published news & events | PUBLIC |
 | GET | `/api/v1/public/notices` | Get public notices & circulars | PUBLIC |
+
+### 18. Reports & Analytics (`/api/v1/reports`, `/api/v1/analytics`)
+
+* `GET /api/v1/analytics/dashboard/executive` - Get high-level KPI aggregations (Super Admin / School Admin)
+* `GET /api/v1/reports/academic` - Generate academic reports (Result analysis, promotion, enrollment)
+* `GET /api/v1/reports/attendance` - Generate attendance trends and reports
+* `GET /api/v1/reports/fees` - Generate fee collection and outstanding reports
+* `GET /api/v1/reports/hr` - Generate employee, payroll, and leave reports
+* `POST /api/v1/reports/generate` - Generate a dynamic report with specific filters
+* `POST /api/v1/reports/export` - Export a dynamic report (query param `format=pdf|excel|csv`)
+* `GET /api/v1/report-templates` - List available report templates
+* `POST /api/v1/reports/saved` - Save a report configuration
+* `GET /api/v1/reports/saved` - Get user's saved reports
+* `POST /api/v1/scheduled-reports` - Schedule a report for automated delivery
+* `GET /api/v1/scheduled-reports` - List scheduled reports
+* `DELETE /api/v1/scheduled-reports/:id` - Cancel a scheduled report
+

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import reportsRoutes from './reports.routes';
 import healthRoutes from './health.routes';
 import authRoutes from './auth.routes';
 import academicSessionRoutes from './academicSessions.routes';
@@ -178,4 +179,7 @@ router.use('/admission-documents', admissionDocumentRoutes);
 router.use('/admission-review', admissionReviewRoutes);
 router.use('/admission-summary', admissionSummaryRoutes);
 
+router.use('/', reportsRoutes);
+
 export default router;
+

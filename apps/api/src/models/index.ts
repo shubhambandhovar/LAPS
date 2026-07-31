@@ -99,3 +99,7 @@ export * from './CmsBanner';
 export * from './CmsMenu';
 export * from './MediaAsset';
 export * from './ThemeSettings';
+export * from './ReportTemplate';
+export * from './SavedReport';
+export * from './ScheduledReport';
+export * from './ReportExecutionLog';

@@ -1,4 +1,4 @@
-export * from './types/api';
+﻿export * from './types/api';
 export * from './types/auth';
 export * from './types/academics';
 export * from './constants/errorCodes';
@@ -87,3 +87,5 @@ export * from './schemas/admission.schema';
 export * from './schemas/hr.schema';
 export * from './schemas/library.schema';
 export * from './schemas/inventory.schema';
+export * from './schemas/reports.schema';
+

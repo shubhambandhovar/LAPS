@@ -12,6 +12,7 @@ export type UserRoleCode =
   | 'DRIVER'
   | 'ADMISSION_OFFICER'
   | 'HR_MANAGER'
+  | 'STORE_MANAGER'
   | 'APPLICANT';
 
 export interface PermissionRule {

@@ -25,6 +25,19 @@ export * from './Employee';
 export * from './SalaryStructure';
 export * from './Payroll';
 export * from './Payslip';
+
+// Phase 17: Library & Inventory Management
+export * from './Book';
+export * from './BookCopy';
+export * from './BookIssue';
+export * from './Reservation';
+export * from './LibraryFine';
+export * from './Vendor';
+export * from './Asset';
+export * from './Consumable';
+export * from './StockMovement';
+export * from './AssetAssignment';
+
 export * from './SeatAllocation';
 export * from './AdmissionApplication';
 export * from './AdmissionDocument';

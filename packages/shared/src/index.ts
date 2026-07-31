@@ -85,3 +85,5 @@ export * from './schemas/cms.schema';
 export * from './schemas/transport.schema';
 export * from './schemas/admission.schema';
 export * from './schemas/hr.schema';
+export * from './schemas/library.schema';
+export * from './schemas/inventory.schema';

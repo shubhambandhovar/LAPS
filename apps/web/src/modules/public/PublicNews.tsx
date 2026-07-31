@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { getPublicNews } from '../../api/public';
-import { Calendar, ArrowRight, User } from 'lucide-react';
+import { Newspaper, Calendar } from 'lucide-react';
+import { Section, Card, Button } from '../../components/public/ui';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export const PublicNews: React.FC = () => {
   const [news, setNews] = useState<any[]>([]);
@@ -9,52 +12,70 @@ export const PublicNews: React.FC = () => {
 
   useEffect(() => {
     getPublicNews()
-      .then(data => setNews(data || []))
+      .then(data => {
+        if (data) setNews(data);
+      })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="bg-slate-50 min-h-[60vh] py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">News & Events</h1>
-          <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
-            Stay updated with the latest happenings, announcements, and events at Little Angels School.
-          </p>
-        </div>
+    <>
+      <Helmet>
+        <title>News & Events | Little Angels School</title>
+        <meta name="description" content="Latest news, announcements, and events at Little Angels School." />
+      </Helmet>
 
+      <div className="bg-primary-700 py-24 text-center">
+        <h1 className="text-4xl md:text-5xl font-heading font-bold text-white mb-4">News & Updates</h1>
+        <p className="text-primary-100 text-lg max-w-2xl mx-auto">Stay informed with the latest happenings in our school community.</p>
+      </div>
+
+      <Section animate className="py-20 min-h-[50vh]">
         {loading ? (
-          <div className="text-center py-20 text-slate-500">Loading news...</div>
+          <div className="flex justify-center items-center h-48">
+             <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {news.length > 0 ? news.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col">
-                {item.image && (
-                  <div className="h-48 bg-slate-100 overflow-hidden">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+            {news.length > 0 ? news.map((item, idx) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Card hoverEffect className="h-full flex flex-col group border-none shadow-md">
+                  {item.image && (
+                    <div className="h-56 overflow-hidden">
+                      <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    </div>
+                  )}
+                  <div className="p-8 flex-grow flex flex-col">
+                    <div className="flex items-center gap-2 text-xs font-bold text-primary-600 mb-4 uppercase tracking-wider">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(item.publishedAt || item.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-4 line-clamp-2">{item.title}</h3>
+                    <p className="text-slate-600 line-clamp-3 mb-8 flex-grow leading-relaxed">{item.content}</p>
+                    <Link to={`/news/${item.id}`} className="mt-auto">
+                      <Button variant="outline" className="w-full">Read Full Article</Button>
+                    </Link>
                   </div>
-                )}
-                <div className="p-6 flex-grow flex flex-col">
-                  <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 mb-3">
-                    <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {new Date(item.publishedAt || item.createdAt).toLocaleDateString()}</span>
-                    <span className="flex items-center gap-1.5"><User className="w-4 h-4" /> {item.author?.name || 'Admin'}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
-                  <p className="text-slate-600 line-clamp-3 mb-6 flex-grow">{item.content}</p>
-                  <Link to={`/news/${item.id}`} className="text-indigo-600 font-semibold text-sm hover:text-indigo-700 inline-flex items-center gap-1 mt-auto">
-                    Read Full Story <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+                </Card>
+              </motion.div>
             )) : (
-              <div className="col-span-full py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 border-dashed">
-                No news or events found at the moment.
+              <div className="col-span-full py-20 text-center text-slate-500 bg-slate-50 rounded-3xl border border-slate-200 border-dashed flex flex-col items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mb-6">
+                  <Newspaper className="w-10 h-10 text-slate-300" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-700 mb-2">No News Found</h3>
+                <p>Check back later for updates and announcements.</p>
               </div>
             )}
           </div>
         )}
-      </div>
-    </div>
+      </Section>
+    </>
   );
 };

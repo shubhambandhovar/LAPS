@@ -9,9 +9,13 @@ import { CmsPageViewer } from '../modules/public/CmsPageViewer';
 import { PublicNews } from '../modules/public/PublicNews';
 import { PublicNotices } from '../modules/public/PublicNotices';
 import { PublicGallery } from '../modules/public/PublicGallery';
-import { AdmissionsLanding } from '../modules/public/AdmissionsLanding';
 import { AdmissionApplicationForm } from '../modules/public/AdmissionApplicationForm';
 import { ApplicationStatus } from '../modules/public/ApplicationStatus';
+import { AboutUs } from '../modules/public/AboutUs';
+import { AcademicsPublic } from '../modules/public/AcademicsPublic';
+import { FacilitiesPublic } from '../modules/public/FacilitiesPublic';
+import { ContactPublic } from '../modules/public/ContactPublic';
+import { AdmissionsPublic } from '../modules/public/AdmissionsPublic';
 import { AdmissionDashboard } from '../modules/admissions/AdmissionDashboard';
 import { AdmissionCycleManager } from '../modules/admissions/AdmissionCycleManager';
 import { ApplicationReviewer } from '../modules/admissions/ApplicationReviewer';
@@ -102,9 +106,13 @@ const router = createBrowserRouter([
       { path: 'news', element: <PublicNews /> },
       { path: 'notices', element: <PublicNotices /> },
       { path: 'gallery', element: <PublicGallery /> },
-      { path: 'admissions', element: <AdmissionsLanding /> },
+      { path: 'admissions', element: <AdmissionsPublic /> },
       { path: 'apply', element: <ProtectedRoute><AdmissionApplicationForm /></ProtectedRoute> },
       { path: 'application-status', element: <ProtectedRoute><ApplicationStatus /></ProtectedRoute> },
+      { path: 'about', element: <AboutUs /> },
+      { path: 'academics', element: <AcademicsPublic /> },
+      { path: 'facilities', element: <FacilitiesPublic /> },
+      { path: 'contact', element: <ContactPublic /> },
       { path: 'page/:slug', element: <CmsPageViewer /> },
     ],
   },

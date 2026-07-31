@@ -179,7 +179,7 @@ router.use('/admission-documents', admissionDocumentRoutes);
 router.use('/admission-review', admissionReviewRoutes);
 router.use('/admission-summary', admissionSummaryRoutes);
 
-router.use('/', reportsRoutes);
+router.use('/reports', reportsRoutes);
 
 export default router;
 

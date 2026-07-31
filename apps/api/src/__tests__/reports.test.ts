@@ -17,7 +17,7 @@ describe('Reports API', () => {
 
   it('GET /api/v1/dashboard/executive - should fetch executive dashboard', async () => {
     const res = await request(app)
-      .get('/api/v1/dashboard/executive')
+      .get('/api/v1/reports/dashboard/executive')
       .set('Authorization', `Bearer ${adminToken}`);
       
     expect(res.status).toBe(200);
@@ -27,7 +27,7 @@ describe('Reports API', () => {
 
   it('GET /api/v1/analytics/:module - should fetch module analytics', async () => {
     const res = await request(app)
-      .get('/api/v1/analytics/fees')
+      .get('/api/v1/reports/analytics/fees')
       .set('Authorization', `Bearer ${adminToken}`);
       
     expect(res.status).toBe(200);

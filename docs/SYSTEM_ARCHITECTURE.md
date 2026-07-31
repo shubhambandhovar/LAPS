@@ -137,3 +137,19 @@ graph LR
 While Phase 1 through 20 are built specifically for **Little Angels School (Gohad)** as a single-school deployment:
 1. **Tenant Identifier Retention (`schoolId`)**: Every Mongoose schema retains an indexed `schoolId` field (e.g., `{ schoolId: { type: String, required: true, default: "LAPS-GOHAD", index: true } }`).
 2. **Zero Multi-Tenant SaaS Infrastructure**: We do **not** implement complex multi-tenant SaaS routing, subdomain extraction, or dynamic tenant schema switching in this single-school version. Retaining `schoolId` simply ensures that if the school ever converts this into a multi-school SaaS in the future, **zero database schema migrations** will be required.
+
+## Deployment Architecture (Phase 19)
+
+### Docker & Containerization
+- **Backend**: Containerized Node.js API (`Dockerfile.api`)
+- **Frontend**: Containerized Nginx serving static React Vite build (`Dockerfile.web`)
+- **Orchestration**: `docker-compose.prod.yml` orchestrating the network.
+
+### Nginx Reverse Proxy
+- **Role**: SSL Termination, Load Balancing, Static Asset Caching, Request Routing.
+- **Security**: CSP, Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options.
+
+### Monitoring & Backups
+- **Logs**: Structured JSON logging routed via Docker standard streams.
+- **Backups**: `mongodump` cron jobs synced to secure offsite object storage (AWS S3).
+- **Metrics**: PM2 / Node metrics for the API container.

@@ -8,24 +8,24 @@ router.use(authenticate);
 
 // Analytics & Dashboard (Only SUPER_ADMIN, SCHOOL_ADMIN, and relevant roles based on UI)
 // For simplicity, we can let the UI restrict or specific controllers check further.
-router.get('/dashboard/executive', requireRole(['SUPER_ADMIN', 'SCHOOL_ADMIN']), ReportsController.getExecutiveDashboard);
-router.get('/analytics/:module', ReportsController.getModuleAnalytics);
+router.get('/dashboard/executive', authenticate, requireRole(['SUPER_ADMIN', 'SCHOOL_ADMIN']), ReportsController.getExecutiveDashboard);
+router.get('/analytics/:module', authenticate, ReportsController.getModuleAnalytics);
 
 // Report Generation and Export
-router.post('/reports/generate', ReportsController.generateReport);
-router.post('/reports/export', ReportsController.exportReport);
+router.post('/generate', authenticate, ReportsController.generateReport);
+router.post('/export', authenticate, ReportsController.exportReport);
 
 // Report Templates
-router.get('/report-templates', ReportsController.getTemplates);
-router.post('/report-templates', requireRole(['SUPER_ADMIN', 'SCHOOL_ADMIN']), ReportsController.createTemplate);
+router.get('/report-templates', authenticate, ReportsController.getTemplates);
+router.post('/report-templates', authenticate, requireRole(['SUPER_ADMIN', 'SCHOOL_ADMIN']), ReportsController.createTemplate);
 
 // Saved Reports
-router.get('/reports/saved', ReportsController.getSavedReports);
-router.post('/reports/saved', ReportsController.createSavedReport);
+router.get('/saved', authenticate, ReportsController.getSavedReports);
+router.post('/saved', authenticate, ReportsController.createSavedReport);
 
 // Scheduled Reports
-router.get('/scheduled-reports', ReportsController.getScheduledReports);
-router.post('/scheduled-reports', ReportsController.createScheduledReport);
-router.delete('/scheduled-reports/:id', ReportsController.deleteScheduledReport);
+router.get('/scheduled-reports', authenticate, ReportsController.getScheduledReports);
+router.post('/scheduled-reports', authenticate, ReportsController.createScheduledReport);
+router.delete('/scheduled-reports/:id', authenticate, ReportsController.deleteScheduledReport);
 
 export default router;

@@ -1,0 +1,33 @@
+# Use node 20 alpine as builder
+FROM node:20-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy root config files
+COPY package.json package-lock.json tsconfig.json ./
+
+# Copy workspaces
+COPY packages/shared ./packages/shared
+COPY apps/web ./apps/web
+
+# Install dependencies
+RUN npm ci --ignore-scripts
+
+# Build shared package first
+RUN npm run build --workspace=@laps/shared
+
+# Build the web application
+ENV VITE_API_URL=/api/v1
+RUN npm run build --workspace=@laps/web
+
+# Production stage using Nginx
+FROM nginx:alpine
+
+# Copy built static files to Nginx HTML directory
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# We don't overwrite the default nginx config here, we will mount it via docker-compose
+# EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,47 @@
+# Use node 20 alpine as builder
+FROM node:20-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy root config files
+COPY package.json package-lock.json tsconfig.json ./
+
+# Copy workspaces
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+
+# Install dependencies (ignoring scripts during install to avoid premature execution)
+RUN npm ci --ignore-scripts
+
+# Build shared package first
+RUN npm run build --workspace=@laps/shared
+
+# Build the api package
+RUN npm run build --workspace=@laps/api
+
+# Production stage
+FROM node:20-alpine
+
+# Set node environment to production
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy built artifacts and necessary files from builder
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+
+# Prune dev dependencies to reduce image size
+RUN npm prune --production
+
+# Expose API port
+EXPOSE 5000
+
+# Start command
+CMD ["node", "apps/api/dist/server.js"]

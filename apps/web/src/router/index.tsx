@@ -23,6 +23,11 @@ import { PortalHomeShell } from '../modules/portal/PortalHomeShell';
 import { UnauthorizedShell } from '../modules/portal/UnauthorizedShell';
 import { NotFoundShell } from '../modules/errors/NotFoundShell';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import {
+  IdentityDashboard,
+  UserAccountsPage,
+  LoginHistoryPage,
+} from '../modules/identity';
 
 import {
   AcademicSessionsPage,
@@ -89,6 +94,26 @@ import {
   CalendarAnalytics,
   EventReminders,
 } from '../modules/calendar';
+import {
+  QrDashboard,
+  IdCardGenerator,
+  QrScanner,
+  ScanHistory,
+} from '../modules/portal/qr';
+import {
+  IdCardDashboard,
+  TemplateBuilder,
+  BulkGenerator,
+  DownloadCenter,
+} from '../modules/portal/id-cards';
+import {
+  DocumentDashboard,
+  DocumentTemplateBuilder,
+  DocumentGenerator,
+  DocumentHistory,
+} from '../modules/portal/documents';
+import { ApprovalQueue } from '../modules/portal/documents/ApprovalQueue';
+import { SignatureManager } from '../modules/portal/signatures/SignatureManager';
 
 const router = createBrowserRouter([
   {
@@ -133,12 +158,53 @@ const router = createBrowserRouter([
         element: <UnauthorizedShell />,
       },
       {
+        path: 'identity',
+        children: [
+          { index: true, element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HR_MANAGER']}><IdentityDashboard /></ProtectedRoute> },
+          { path: 'accounts', element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HR_MANAGER']}><UserAccountsPage /></ProtectedRoute> },
+          { path: 'history', element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HR_MANAGER']}><LoginHistoryPage /></ProtectedRoute> },
+        ],
+      },
+      {
+        path: 'qr',
+        children: [
+          { index: true, element: <QrDashboard /> },
+          { path: 'id-cards', element: <ProtectedRoute requiredPermission="qr.create"><IdCardGenerator /></ProtectedRoute> },
+          { path: 'scan', element: <ProtectedRoute requiredPermission="qr.scan"><QrScanner /></ProtectedRoute> },
+          { path: 'history', element: <ProtectedRoute requiredPermission="qr.read"><ScanHistory /></ProtectedRoute> },
+        ],
+      },
+      {
+        path: 'id-cards',
+        children: [
+          { index: true, element: <IdCardDashboard /> },
+          { path: 'templates', element: <ProtectedRoute requiredPermission="id_card.create"><TemplateBuilder /></ProtectedRoute> },
+          { path: 'bulk-generate', element: <ProtectedRoute requiredPermission="id_card.create"><BulkGenerator /></ProtectedRoute> },
+          { path: 'my-card', element: <DownloadCenter /> },
+          { path: 'downloads', element: <ProtectedRoute requiredPermission="id_card.read"><DownloadCenter /></ProtectedRoute> },
+        ],
+      },
+      {
+        path: 'documents',
+        children: [
+          { index: true, element: <DocumentDashboard /> },
+          { path: 'templates', element: <ProtectedRoute requiredPermission="document.template.manage"><DocumentTemplateBuilder /></ProtectedRoute> },
+          { path: 'generate', element: <ProtectedRoute requiredPermission="document.issue"><DocumentGenerator /></ProtectedRoute> },
+          { path: 'history', element: <ProtectedRoute requiredPermission="document.read"><DocumentHistory /></ProtectedRoute> },
+          { path: 'approval-queue', element: <ProtectedRoute requiredPermission="document.approve"><ApprovalQueue /></ProtectedRoute> },
+        ],
+      },
+      {
+        path: 'signatures',
+        element: <ProtectedRoute requiredPermission="signature.manage"><SignatureManager /></ProtectedRoute>,
+      },
+      {
         path: 'academic-sessions',
-        element: <AcademicSessionsPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN']}><AcademicSessionsPage /></ProtectedRoute>,
       },
       {
         path: 'classes',
-        element: <ClassesPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER']}><ClassesPage /></ProtectedRoute>,
       },
       {
         path: 'admissions',
@@ -150,35 +216,35 @@ const router = createBrowserRouter([
       },
       {
         path: 'sections',
-        element: <SectionsPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER']}><SectionsPage /></ProtectedRoute>,
       },
       {
         path: 'subjects',
-        element: <SubjectsPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER']}><SubjectsPage /></ProtectedRoute>,
       },
       {
         path: 'teachers',
-        element: <TeachersPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HR_MANAGER', 'TEACHER']}><TeachersPage /></ProtectedRoute>,
       },
       {
         path: 'teaching-assignments',
-        element: <TeachingAssignmentsPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HR_MANAGER']}><TeachingAssignmentsPage /></ProtectedRoute>,
       },
       {
         path: 'students',
-        element: <StudentsPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'ACCOUNTANT', 'RECEPTIONIST', 'ADMISSION_OFFICER', 'LIBRARIAN']}><StudentsPage /></ProtectedRoute>,
       },
       {
         path: 'students/:id',
-        element: <StudentDetailPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'ACCOUNTANT', 'RECEPTIONIST', 'ADMISSION_OFFICER', 'LIBRARIAN']}><StudentDetailPage /></ProtectedRoute>,
       },
       {
         path: 'guardians',
-        element: <GuardiansPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN', 'RECEPTIONIST']}><GuardiansPage /></ProtectedRoute>,
       },
       {
         path: 'enrollments',
-        element: <EnrollmentsPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SCHOOL_ADMIN']}><EnrollmentsPage /></ProtectedRoute>,
       },
       {
         path: 'curriculum',

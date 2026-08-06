@@ -18,6 +18,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
+  refreshProfile: () => Promise<UserAccount | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,6 +117,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         logoutAll,
         refreshSession,
+        refreshProfile: fetchProfile,
       }}
     >
       {children}

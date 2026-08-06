@@ -1,5 +1,5 @@
 import { Schema, model, Document, Types } from 'mongoose';
-import { UserRoleCode } from '@laps/shared';
+import { UserRoleCode, AccountStatus } from '@laps/shared';
 
 export interface IUser {
   schoolId: string;
@@ -11,9 +11,12 @@ export interface IUser {
   roleCode: UserRoleCode;
   userType: UserRoleCode;
   profileRef?: Types.ObjectId;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: AccountStatus;
   lastLoginAt?: Date;
   passwordChangedAt?: Date;
+  forcePasswordChange?: boolean;
+  failedLoginAttempts?: number;
+  lockedUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,7 +74,15 @@ const UserSchema = new Schema<IUserDocument>(
     },
     status: {
       type: String,
-      enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'],
+      enum: [
+        'PENDING',
+        'ACTIVE',
+        'LOCKED',
+        'DISABLED',
+        'PASSWORD_RESET_REQUIRED',
+        'SUSPENDED',
+        'INACTIVE',
+      ],
       default: 'ACTIVE',
       index: true,
     },
@@ -79,6 +90,18 @@ const UserSchema = new Schema<IUserDocument>(
       type: Date,
     },
     passwordChangedAt: {
+      type: Date,
+    },
+    forcePasswordChange: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockedUntil: {
       type: Date,
     },
   },

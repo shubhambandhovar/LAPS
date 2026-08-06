@@ -1,7 +1,8 @@
-﻿export * from './types/api';
+export * from './types/api';
 export * from './types/auth';
 export * from './types/academics';
 export * from './constants/errorCodes';
+export * from './constants/permissions';
 export {
   BackendEnvSchema,
   type BackendEnv,
@@ -88,4 +89,8 @@ export * from './schemas/hr.schema';
 export * from './schemas/library.schema';
 export * from './schemas/inventory.schema';
 export * from './schemas/reports.schema';
-
+export * from './schemas/identity.schema';
+export * from './schemas/qr.schema';
+export * from './schemas/idCard.schema';
+export * from './schemas/document.schema';
+export * from './schemas/signature.schema';

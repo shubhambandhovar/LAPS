@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Employee } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import { ErrorCodes, employeeSchema } from '@laps/shared';
+import { IdentityAutomationService } from '../services/identityAutomation.service';
+import { logger } from '../config/logger';
 
 export const getEmployees = async (_req: Request, res: Response) => {
   try {
@@ -35,9 +37,7 @@ export const createEmployee = async (req: Request, res: Response) => {
   try {
     const parsed = employeeSchema.parse(req.body);
     
-    // Auto generate employeeId if not provided (mock implementation)
-    const count = await Employee.countDocuments();
-    const employeeId = `EMP-${(count + 1001).toString()}`;
+    const employeeId = await IdentityAutomationService.generateId('EMPLOYEE');
 
     const employee = await Employee.create({
       ...parsed,
@@ -45,7 +45,18 @@ export const createEmployee = async (req: Request, res: Response) => {
       createdBy: req.user!.id,
       updatedBy: req.user!.id,
     });
-    return sendSuccess(res, 201, 'Employee created', employee);
+
+    try {
+      await IdentityAutomationService.generateEmployeeAccount(
+        employee._id,
+        (parsed as any).email,
+        (parsed as any).phone,
+      );
+    } catch (autoErr) {
+      logger.error({ autoErr, employeeId: employee._id }, 'Failed to auto-generate employee account on creation');
+    }
+    const updatedEmployee = await Employee.findById(employee._id);
+    return sendSuccess(res, 201, 'Employee created', updatedEmployee || employee);
   } catch (error: any) {
     if (error.errors) {
       return sendError(res, 400, ErrorCodes.VALIDATION_ERROR, 'Validation failed', error.errors);

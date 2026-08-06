@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ErrorCodes } from '@laps/shared';
+import { ErrorCodes, canRoleAccessModule } from '@laps/shared';
 import { Role } from '../models/Role';
 import { IPermissionDocument } from '../models/Permission';
 import { AppError } from '../utils/errors';
@@ -59,12 +59,23 @@ export function requirePermission(
         );
       }
 
-      const hasPermission = role.permissions.some((p) => {
-        const actionMatch = p.action === 'ALL' || p.action === actionName;
-        const resMatch = !resourceName || p.resource === resourceName;
-        const modMatch = !moduleName || p.module === moduleName;
-        return actionMatch && resMatch && modMatch;
-      });
+      let hasPermission = false;
+      if (role && role.permissions && role.permissions.length > 0) {
+        hasPermission = role.permissions.some((p) => {
+          const actionMatch = p.action === 'ALL' || p.action === actionName;
+          const resMatch = !resourceName || p.resource === resourceName;
+          const modMatch = !moduleName || p.module === moduleName;
+          return actionMatch && resMatch && modMatch;
+        });
+      }
+
+      if (!hasPermission) {
+        hasPermission = canRoleAccessModule(
+          req.user.role,
+          resourceName || moduleName || '',
+          actionName,
+        );
+      }
 
       if (!hasPermission) {
         throw new AppError(

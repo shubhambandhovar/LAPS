@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
 import { apiClient } from '../../lib/api';
 import {
   Search,
@@ -23,6 +24,7 @@ interface StudentRecord {
 }
 
 export const StudentsPage: React.FC = () => {
+  const { can } = usePermissions();
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,13 +134,15 @@ export const StudentsPage: React.FC = () => {
             Manage student demographics, admission records, and dossiers.
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Student Profile</span>
-        </button>
+        {can('student.create') && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Student Profile</span>
+          </button>
+        )}
       </div>
 
       {/* Filter & Search Bar */}

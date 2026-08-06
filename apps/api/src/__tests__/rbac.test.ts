@@ -42,21 +42,21 @@ describe('Phase 2 — Role-Based Access Control (RBAC) Verification Suite', () =
   it('2. Returns 403 RBAC_PERMISSION_DENIED when user lacks required permission', async () => {
     const role = await Role.create({
       schoolId: 'LAPS-GOHAD',
-      code: 'RECEPTIONIST',
-      name: 'Receptionist',
-      description: 'Front desk',
+      code: 'STORE_MANAGER',
+      name: 'Store Manager',
+      description: 'Store manager',
       isSystem: true,
       permissions: [], // No STUDENT READ permission
     });
 
-    const passwordHash = await hashPassword('ReceptionistPass10!');
+    const passwordHash = await hashPassword('StoreManagerPass10!');
     await User.create({
       schoolId: 'LAPS-GOHAD',
-      identifier: 'receptionist@littleangelsschool.edu.in',
-      email: 'reception@littleangelsschool.edu.in',
+      identifier: 'storemanager@littleangelsschool.edu.in',
+      email: 'store@littleangelsschool.edu.in',
       passwordHash,
       roleId: role._id,
-      roleCode: 'RECEPTIONIST',
+      roleCode: 'STORE_MANAGER',
       userType: 'STAFF',
       status: 'ACTIVE',
     });
@@ -64,8 +64,8 @@ describe('Phase 2 — Role-Based Access Control (RBAC) Verification Suite', () =
     const loginRes = await request(app)
       .post('/api/v1/auth/login')
       .send({
-        identifier: 'receptionist@littleangelsschool.edu.in',
-        password: 'ReceptionistPass10!',
+        identifier: 'storemanager@littleangelsschool.edu.in',
+        password: 'StoreManagerPass10!',
       });
     const token = loginRes.body.data.accessToken;
 

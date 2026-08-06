@@ -7,6 +7,7 @@ import {
   getMeController,
   getSessionsController,
   deleteSessionController,
+  changePasswordController,
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 import { csrfProtection } from '../middleware/csrf';
@@ -48,6 +49,13 @@ router.post(
 router.post('/logout', csrfProtection, asyncHandler(logoutController));
 
 // Authenticated session & account security endpoints
+router.post(
+  '/change-password',
+  authenticate,
+  csrfProtection,
+  asyncHandler(changePasswordController),
+);
+
 router.post(
   '/logout-all',
   authenticate,

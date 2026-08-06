@@ -1,135 +1,55 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Card } from '../../components/ui/Card';
+import { useAuth } from '../../hooks/useAuth';
 import {
-  Calendar,
-  BookOpen,
-  Users,
-  Award,
-  GraduationCap,
-  UserCheck,
-  School,
-} from 'lucide-react';
+  AdminDashboard,
+  SchoolAdminDashboard,
+  TeacherDashboard,
+  StudentDashboard,
+  GuardianDashboard,
+  HRDashboard,
+  FinanceDashboard,
+  LibraryDashboard,
+  InventoryDashboard,
+  AdmissionOfficerDashboard,
+  ReceptionistDashboard,
+  EmployeeDashboard,
+} from './dashboards';
 
 export const PortalHomeShell: React.FC = () => {
-  const academicModules = [
-    {
-      title: 'Students Directory',
-      desc: 'Student profiles, admission numbers, dossiers, and emergency contacts.',
-      to: '/portal/students',
-      icon: GraduationCap,
-      color: 'bg-indigo-50 text-indigo-600',
-    },
-    {
-      title: 'Guardians Directory',
-      desc: 'Guardian profiles, emergency contact authorization, and student linking.',
-      to: '/portal/guardians',
-      icon: Users,
-      color: 'bg-blue-50 text-blue-600',
-    },
-    {
-      title: 'Enrollment Matrix',
-      desc: 'Academic session rosters, roll number assignment, and lifecycle wizards.',
-      to: '/portal/enrollments',
-      icon: School,
-      color: 'bg-emerald-50 text-emerald-600',
-    },
-    {
-      title: 'Academic Sessions',
-      desc: 'Manage school years, start/end dates, and switch active current session.',
-      to: '/portal/academic-sessions',
-      icon: Calendar,
-      color: 'bg-indigo-50 text-indigo-600',
-    },
-    {
-      title: 'Classes',
-      desc: 'Configure grade levels (Nursery to Class 10), order sequence & auto-generated codes.',
-      to: '/portal/classes',
-      icon: BookOpen,
-      color: 'bg-blue-50 text-blue-600',
-    },
-    {
-      title: 'Sections',
-      desc: 'Create class sections, assign room numbers and set student capacities.',
-      to: '/portal/sections',
-      icon: Users,
-      color: 'bg-emerald-50 text-emerald-600',
-    },
-    {
-      title: 'Global Subjects',
-      desc: 'Manage school-wide master subjects, short codes, and THEORY/PRACTICAL types.',
-      to: '/portal/subjects',
-      icon: Award,
-      color: 'bg-amber-50 text-amber-600',
-    },
-    {
-      title: 'Teachers',
-      desc: 'Faculty profiles with auto-generated employee IDs (TCH-0001) and photos.',
-      to: '/portal/teachers',
-      icon: GraduationCap,
-      color: 'bg-purple-50 text-purple-600',
-    },
-    {
-      title: 'Teaching Assignments',
-      desc: 'Assign teachers to classes & sections and designate Class Teachers.',
-      to: '/portal/teaching-assignments',
-      icon: UserCheck,
-      color: 'bg-rose-50 text-rose-600',
-    },
-    {
-      title: 'Event & Holiday Calendar',
-      desc: 'Unified academic calendar, holidays, school events, and reminders.',
-      to: '/calendar',
-      icon: Calendar,
-      color: 'bg-purple-50 text-purple-600',
-    },
-  ];
+  const { user } = useAuth();
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <Card
-        title="Little Angels School — ERP Portal"
-        subtitle="Operational Management System for Pre-Primary up to Class 10"
-      >
-        <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm mb-6">
-          <p className="font-semibold">
-            ✅ Phase 4: Student, Guardian & Enrollment Management Active
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-            Complete student lifecycle management with dossier profiles, guardian linking, session-scoped enrollment matrix, and promotion/transfer/withdrawal wizards.
-          </p>
-        </div>
+  if (!user || !user.role) {
+    return <AdminDashboard />;
+  }
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {academicModules.map((mod) => {
-            const Icon = mod.icon;
-            return (
-              <Link
-                key={mod.to}
-                to={mod.to}
-                className="group p-5 rounded-xl border border-slate-200 hover:border-indigo-500 bg-white hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${mod.color}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                    {mod.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                    {mod.desc}
-                  </p>
-                </div>
-                <div className="mt-4 text-xs font-semibold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
-                  Manage →
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </Card>
-    </div>
-  );
+  const role = user.role.toUpperCase();
+
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return <AdminDashboard />;
+    case 'SCHOOL_ADMIN':
+      return <SchoolAdminDashboard />;
+    case 'TEACHER':
+      return <TeacherDashboard />;
+    case 'STUDENT':
+      return <StudentDashboard />;
+    case 'GUARDIAN':
+      return <GuardianDashboard />;
+    case 'HR_MANAGER':
+      return <HRDashboard />;
+    case 'ACCOUNTANT':
+      return <FinanceDashboard />;
+    case 'LIBRARIAN':
+      return <LibraryDashboard />;
+    case 'STORE_MANAGER':
+      return <InventoryDashboard />;
+    case 'ADMISSION_OFFICER':
+      return <AdmissionOfficerDashboard />;
+    case 'RECEPTIONIST':
+      return <ReceptionistDashboard />;
+    case 'EMPLOYEE':
+      return <EmployeeDashboard />;
+    default:
+      return <AdminDashboard />;
+  }
 };

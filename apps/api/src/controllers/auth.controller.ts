@@ -4,6 +4,7 @@ import {
   RevokeSessionSchema,
   ErrorCodes,
   PermissionRule,
+  firstLoginPasswordChangeSchema,
 } from '@laps/shared';
 import { AuthService, toSafeAccount } from '../services/auth.service';
 import { sendSuccess } from '../utils/response';
@@ -12,6 +13,8 @@ import { env } from '../config/env';
 import { User } from '../models/User';
 import { Role } from '../models/Role';
 import { Permission, IPermissionDocument } from '../models/Permission';
+import { verifyPassword, hashPassword } from '../utils/crypto';
+import { logger } from '../config/logger';
 
 void Permission; // Ensure Mongoose registers the Permission model
 
@@ -54,6 +57,7 @@ export async function loginController(req: Request, res: Response): Promise<void
     expiresIn: result.expiresIn,
     sessionId: result.sessionId,
     sessionFamilyId: result.sessionFamilyId,
+    forcePasswordChangeRequired: (result as any).forcePasswordChangeRequired,
   });
 }
 
@@ -179,4 +183,40 @@ export async function deleteSessionController(
   await AuthService.revokeSession(req.user.id, sessionId);
 
   sendSuccess(res, 200, 'Device session revoked successfully', null);
+}
+
+export async function changePasswordController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!req.user || !req.user.id) {
+    throw new AppError(
+      401,
+      ErrorCodes.AUTH_TOKEN_EXPIRED,
+      'Authentication required',
+    );
+  }
+
+  const { currentPassword, newPassword } = firstLoginPasswordChangeSchema.parse(req.body);
+
+  const user = await User.findById(req.user.id).select('+passwordHash');
+  if (!user) {
+    throw new AppError(404, ErrorCodes.RESOURCE_NOT_FOUND, 'User not found');
+  }
+
+  const isMatch = await verifyPassword(currentPassword, user.passwordHash);
+  if (!isMatch) {
+    throw new AppError(400, ErrorCodes.VALIDATION_ERROR, 'Current password is incorrect');
+  }
+
+  const newHash = await hashPassword(newPassword);
+  user.passwordHash = newHash;
+  user.forcePasswordChange = false;
+  user.status = 'ACTIVE';
+  user.passwordChangedAt = new Date();
+  await user.save();
+
+  logger.info({ userId: user._id, identifier: user.identifier }, 'AUDIT: User changed password successfully');
+
+  sendSuccess(res, 200, 'Password changed successfully. Your account is now active.', { ok: true });
 }

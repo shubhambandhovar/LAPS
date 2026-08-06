@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { ErrorCodes, UserAccount, RefreshSessionInfo } from '@laps/shared';
 import { User, IUserDocument } from '../models/User';
 import { RefreshSession } from '../models/RefreshSession';
+import { LoginHistory } from '../models/LoginHistory';
 import {
   verifyPassword,
   hashRefreshToken,
@@ -25,6 +26,7 @@ export function toSafeAccount(user: IUserDocument): UserAccount {
     profileRef: user.profileRef?.toString(),
     status: user.status,
     lastLoginAt: user.lastLoginAt?.toISOString(),
+    forcePasswordChange: user.forcePasswordChange || false,
   };
 }
 
@@ -46,14 +48,33 @@ export class AuthService {
       identifier: normalizedId,
     }).select('+passwordHash');
 
-    if (!user || user.status !== 'ACTIVE') {
+    if (!user || (user.status !== 'ACTIVE' && user.status !== 'PASSWORD_RESET_REQUIRED')) {
       logger.warn({ identifier: normalizedId, ip }, 'Login failed: Account not found or inactive');
+      await LoginHistory.create({
+        schoolId: 'LAPS-GOHAD',
+        identifier: normalizedId,
+        loginAt: new Date(),
+        ipAddress: ip || '0.0.0.0',
+        userAgent: userAgentHeader || 'unknown',
+        status: 'FAILURE',
+        failureReason: 'Account not found or inactive',
+      });
       throw new AppError(401, ErrorCodes.AUTH_TOKEN_EXPIRED, 'Invalid credentials');
     }
 
     const isMatch = await verifyPassword(passwordPlain, user.passwordHash);
     if (!isMatch) {
       logger.warn({ identifier: normalizedId, ip }, 'Login failed: Password mismatch');
+      await LoginHistory.create({
+        userId: user._id,
+        schoolId: user.schoolId,
+        identifier: normalizedId,
+        loginAt: new Date(),
+        ipAddress: ip || '0.0.0.0',
+        userAgent: userAgentHeader || 'unknown',
+        status: 'FAILURE',
+        failureReason: 'Password mismatch',
+      });
       throw new AppError(401, ErrorCodes.AUTH_TOKEN_EXPIRED, 'Invalid credentials');
     }
 
@@ -80,6 +101,16 @@ export class AuthService {
 
     await User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
 
+    await LoginHistory.create({
+      userId: user._id,
+      schoolId: user.schoolId,
+      identifier: normalizedId,
+      loginAt: new Date(),
+      ipAddress: ip || '0.0.0.0',
+      userAgent: userAgentHeader || 'unknown',
+      status: 'SUCCESS',
+    });
+
     const accessToken = generateAccessToken(
       user,
       session._id.toString(),
@@ -91,6 +122,8 @@ export class AuthService {
       'SUCCESS: User logged in',
     );
 
+    const isForceReset = user.forcePasswordChange || user.status === 'PASSWORD_RESET_REQUIRED' || false;
+
     return {
       user: toSafeAccount(user),
       accessToken,
@@ -98,6 +131,7 @@ export class AuthService {
       expiresIn: env.JWT_ACCESS_EXPIRES_IN,
       sessionId: session._id.toString(),
       sessionFamilyId,
+      forcePasswordChangeRequired: isForceReset,
     };
   }
 

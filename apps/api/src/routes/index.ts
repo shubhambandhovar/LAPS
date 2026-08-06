@@ -2,6 +2,7 @@ import { Router } from 'express';
 import reportsRoutes from './reports.routes';
 import healthRoutes from './health.routes';
 import authRoutes from './auth.routes';
+import accountRoutes from './account.routes';
 import academicSessionRoutes from './academicSessions.routes';
 import classRoutes from './classes.routes';
 import sectionRoutes from './sections.routes';
@@ -57,6 +58,10 @@ import reminderRoutes from './reminders.routes';
 import calendarViewRoutes from './calendar.routes';
 import vehicleRoutes from './vehicle.routes';
 import driverRoutes from './driver.routes';
+import qrRoutes from './qr.routes';
+import idCardRoutes from './idCard.routes';
+import documentRoutes from './document.routes';
+import signatureRoutes from './signature.routes';
 import routeRoutes from './route.routes';
 import stopRoutes from './stop.routes';
 import assignmentRoutes from './assignment.routes';
@@ -82,6 +87,7 @@ router.use('/health', healthRoutes);
 
 // Phase 2: Mount Authentication & Multi-Device Session Security endpoints
 router.use('/auth', authRoutes);
+router.use('/accounts', accountRoutes);
 
 // Phase 3: Mount Academic Foundation & Master Data endpoints
 router.use('/academic-sessions', academicSessionRoutes);
@@ -178,8 +184,12 @@ router.use('/admissions', admissionRoutes);
 router.use('/admission-documents', admissionDocumentRoutes);
 router.use('/admission-review', admissionReviewRoutes);
 router.use('/admission-summary', admissionSummaryRoutes);
+router.use('/documents', documentRoutes);
+router.use('/signatures', signatureRoutes);
 
 router.use('/reports', reportsRoutes);
+router.use('/qr', qrRoutes);
+router.use('/id-cards', idCardRoutes);
 
 export default router;
 

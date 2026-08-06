@@ -35,12 +35,28 @@ export async function authenticate(
     }
 
     const user = await User.findById(payload.sub);
-    if (!user || user.status !== 'ACTIVE') {
+    if (!user || (user.status !== 'ACTIVE' && user.status !== 'PASSWORD_RESET_REQUIRED')) {
       throw new AppError(
         401,
         ErrorCodes.AUTH_SESSION_REVOKED,
         'Account is inactive, suspended, or does not exist',
       );
+    }
+
+    const isForceReset = user.forcePasswordChange || user.status === 'PASSWORD_RESET_REQUIRED';
+    if (isForceReset) {
+      const allowedPaths = [
+        '/api/v1/auth/change-password',
+        '/api/v1/auth/logout',
+        '/api/v1/auth/me',
+      ];
+      if (!allowedPaths.some((p) => req.originalUrl.includes(p))) {
+        throw new AppError(
+          403,
+          ErrorCodes.PASSWORD_RESET_REQUIRED,
+          'You must change your temporary password before accessing the system.',
+        );
+      }
     }
 
     req.user = {

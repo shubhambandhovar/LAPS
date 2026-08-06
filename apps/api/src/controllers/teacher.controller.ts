@@ -9,6 +9,8 @@ import { Teacher } from '../models/Teacher';
 import { AppError } from '../utils/errors';
 import { sendSuccess } from '../utils/response';
 import mongoose from 'mongoose';
+import { IdentityAutomationService } from '../services/identityAutomation.service';
+import { logger } from '../config/logger';
 
 export async function getTeachers(req: Request, res: Response): Promise<void> {
   const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
@@ -102,7 +104,15 @@ export async function createTeacher(
     updatedBy: req.user!.id,
   });
 
-  sendSuccess(res, 201, 'Teacher created successfully', teacher);
+  try {
+    await IdentityAutomationService.generateTeacherAccount(teacher._id);
+  } catch (autoErr) {
+    logger.error({ autoErr, teacherId: teacher._id }, 'Failed to auto-generate teacher account on creation');
+  }
+
+  const updatedTeacher = await Teacher.findById(teacher._id);
+
+  sendSuccess(res, 201, 'Teacher created successfully', updatedTeacher || teacher);
 }
 
 export async function getTeacherById(

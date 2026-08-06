@@ -11,6 +11,8 @@ import { sendSuccess, sendError } from '../utils/response';
 import { ErrorCodes, admissionReviewSchema } from '@laps/shared';
 import mongoose from 'mongoose';
 import { z } from 'zod';
+import { IdentityAutomationService } from '../services/identityAutomation.service';
+import { logger } from '../config/logger';
 
 const generateAdmissionNumber = async () => {
   const currentYear = new Date().getFullYear();
@@ -39,6 +41,8 @@ export const submitReview = async (req: Request, res: Response) => {
 
     const oldStatus = application.status;
     const newStatus = data.newStatus;
+    let approvedStudentId: string | undefined;
+    let approvedGuardianId: string | undefined;
 
     if (newStatus === 'APPROVED' && oldStatus !== 'APPROVED') {
       // Execute the complex enrollment transaction
@@ -135,6 +139,9 @@ export const submitReview = async (req: Request, res: Response) => {
         enrollmentStatus: 'ACTIVE',
         createdBy: req.user!.id,
       }], { session });
+
+      approvedStudentId = student[0]._id.toString();
+      approvedGuardianId = guardian[0]._id.toString();
     }
 
     // Handle WAITLISTED logic
@@ -165,6 +172,18 @@ export const submitReview = async (req: Request, res: Response) => {
     }], { session });
 
     await session.commitTransaction();
+
+    if (approvedStudentId) {
+      try {
+        await IdentityAutomationService.generateStudentAccount(
+          approvedStudentId,
+          approvedGuardianId,
+        );
+      } catch (autoErr) {
+        logger.error({ autoErr, approvedStudentId }, 'Failed to auto-generate student account on admission approval');
+      }
+    }
+
     return sendSuccess(res, 201, 'Success', review[0]);
   } catch (error) {
     await session.abortTransaction();

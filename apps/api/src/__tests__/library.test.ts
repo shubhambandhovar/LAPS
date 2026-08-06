@@ -1,26 +1,32 @@
-declare const describe: any;
-declare const it: any;
-declare const expect: any;
-declare const beforeAll: any;
-declare const afterAll: any;
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { app } from '../app';
-import { Book, BookCopy, BookIssue, Reservation, Student, User } from '../models';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import { createApp } from '../app';
+import { connectDatabase, disconnectDatabase } from '../config/database';
+import { BookCopy, Student, User } from '../models';
 import { generateAccessToken as generateToken } from '../utils/jwt';
+
+let mongoServer: MongoMemoryServer;
+let app: ReturnType<typeof createApp>;
 
 describe('Library API', () => {
   let adminToken: string;
   let studentToken: string;
-  let bookId: mongoose.Types.ObjectId;
-  let copyId: mongoose.Types.ObjectId;
+  let bookId: string;
+  let copyId: string;
   let studentRefId: mongoose.Types.ObjectId;
   let adminId: mongoose.Types.ObjectId;
   let studentUserId: mongoose.Types.ObjectId;
 
   beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
+    await connectDatabase(uri);
+    app = createApp();
+
     adminId = new mongoose.Types.ObjectId();
-    const admin = await User.create({
+    await User.create({
       _id: adminId,
       schoolId: 'LAPS-GOHAD',
       identifier: 'lib_admin',
@@ -28,9 +34,18 @@ describe('Library API', () => {
       roleId: new mongoose.Types.ObjectId(),
       roleCode: 'SUPER_ADMIN',
       userType: 'SUPER_ADMIN',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
     });
-    adminToken = generateToken(admin as any, 'sid', 'sfid');
+    adminToken = generateToken(
+      {
+        _id: adminId,
+        schoolId: 'LAPS-GOHAD',
+        roleCode: 'SUPER_ADMIN',
+        userType: 'SUPER_ADMIN',
+      } as any,
+      'sid',
+      'sfid',
+    );
 
     studentRefId = new mongoose.Types.ObjectId();
     const student = await Student.create({
@@ -39,7 +54,13 @@ describe('Library API', () => {
       admissionNumber: 'LIB-STU-001',
       firstName: 'Lib',
       lastName: 'Stu',
-      status: 'ACTIVE'
+      gender: 'MALE',
+      dateOfBirth: new Date('2010-01-01'),
+      address: '123 Test St',
+      pinCode: '477116',
+      status: 'ACTIVE',
+      createdBy: adminId.toString(),
+      updatedBy: adminId.toString(),
     });
 
     studentUserId = new mongoose.Types.ObjectId();
@@ -52,18 +73,25 @@ describe('Library API', () => {
       roleCode: 'STUDENT',
       userType: 'STUDENT',
       profileRef: student._id,
-      status: 'ACTIVE'
+      status: 'ACTIVE',
     });
-    studentToken = generateToken(admin as any, 'sid', 'sfid');
+    studentToken = generateToken(
+      {
+        _id: studentUserId,
+        schoolId: 'LAPS-GOHAD',
+        roleCode: 'STUDENT',
+        userType: 'STUDENT',
+      } as any,
+      'sid',
+      'sfid',
+    );
   });
 
   afterAll(async () => {
-    await Book.deleteMany({ schoolId: 'LAPS-GOHAD' });
-    await BookCopy.deleteMany({ schoolId: 'LAPS-GOHAD' });
-    await BookIssue.deleteMany({ schoolId: 'LAPS-GOHAD' });
-    await Reservation.deleteMany({ schoolId: 'LAPS-GOHAD' });
-    await User.deleteMany({ _id: { $in: [adminId, studentUserId] } });
-    await Student.deleteMany({ _id: studentRefId });
+    await disconnectDatabase();
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
   });
 
   it('should create a book catalog entry', async () => {
@@ -75,7 +103,7 @@ describe('Library API', () => {
         title: 'Introduction to Algorithms',
         authors: ['Thomas H. Cormen'],
       });
-    
+
     expect(res.status).toBe(201);
     expect(res.body.data.book.title).toBe('Introduction to Algorithms');
     bookId = res.body.data.book._id;
@@ -86,9 +114,9 @@ describe('Library API', () => {
       .post(`/api/v1/library/books/${bookId}/copies`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        accessionNumber: 'ACC-001'
+        accessionNumber: 'ACC-001',
       });
-    
+
     expect(res.status).toBe(201);
     expect(res.body.data.copy.status).toBe('AVAILABLE');
     copyId = res.body.data.copy._id;
@@ -99,9 +127,9 @@ describe('Library API', () => {
       .post(`/api/v1/library/books/${bookId}/copies`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        accessionNumber: 'ACC-001'
+        accessionNumber: 'ACC-001',
       });
-    
+
     expect(res.status).toBe(409);
   });
 
@@ -116,9 +144,9 @@ describe('Library API', () => {
         bookCopyId: copyId,
         issuedToUserType: 'STUDENT',
         studentId: studentRefId,
-        dueDate: dueDate.toISOString().split('T')[0]
+        dueDate: dueDate.toISOString().split('T')[0],
       });
-    
+
     expect(res.status).toBe(201);
     expect(res.body.data.issue.status).toBe('ISSUED');
 
@@ -131,7 +159,7 @@ describe('Library API', () => {
     const res = await request(app)
       .get('/api/v1/library/issues')
       .set('Authorization', `Bearer ${studentToken}`);
-    
+
     expect(res.status).toBe(200);
     expect(res.body.data.issues.length).toBe(1);
     expect(res.body.data.issues[0].studentId.toString()).toBe(studentRefId.toString());
@@ -144,11 +172,10 @@ describe('Library API', () => {
       .send({
         bookId,
         reservedByUserType: 'STUDENT',
-        studentId: studentRefId
+        studentId: studentRefId,
       });
-    
+
     expect(res.status).toBe(201);
     expect(res.body.data.reservation.queuePosition).toBe(1);
   });
-
 });

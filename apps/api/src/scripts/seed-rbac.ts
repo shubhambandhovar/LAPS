@@ -62,6 +62,18 @@ const PERMISSIONS_LIST: PermDef[] = [
     description: 'View teacher profile',
   },
   {
+    module: 'TEACHER',
+    action: 'CREATE',
+    resource: 'teacher',
+    description: 'Create teacher profile',
+  },
+  {
+    module: 'TEACHER',
+    action: 'UPDATE',
+    resource: 'teacher',
+    description: 'Update teacher profile',
+  },
+  {
     module: 'ATTENDANCE',
     action: 'CREATE',
     resource: 'attendance',
@@ -117,9 +129,21 @@ const PERMISSIONS_LIST: PermDef[] = [
   },
   {
     module: 'FEE',
+    action: 'CREATE',
+    resource: 'fee',
+    description: 'Create fee invoices and receipts',
+  },
+  {
+    module: 'FEE',
     action: 'READ',
     resource: 'fee',
     description: 'View fee dues and receipts',
+  },
+  {
+    module: 'FEE',
+    action: 'UPDATE',
+    resource: 'fee',
+    description: 'Update fee records and collection',
   },
   {
     module: 'CMS',
@@ -150,6 +174,54 @@ const PERMISSIONS_LIST: PermDef[] = [
     action: 'UPDATE',
     resource: 'hr',
     description: 'Manage HR and process payroll',
+  },
+  {
+    module: 'INVENTORY',
+    action: 'READ',
+    resource: 'asset',
+    description: 'View inventory assets',
+  },
+  {
+    module: 'INVENTORY',
+    action: 'CREATE',
+    resource: 'asset',
+    description: 'Create inventory assets',
+  },
+  {
+    module: 'INVENTORY',
+    action: 'UPDATE',
+    resource: 'asset',
+    description: 'Update inventory assets',
+  },
+  {
+    module: 'INVENTORY',
+    action: 'READ',
+    resource: 'vendor',
+    description: 'View inventory vendors',
+  },
+  {
+    module: 'INVENTORY',
+    action: 'READ',
+    resource: 'consumable',
+    description: 'View inventory consumables',
+  },
+  {
+    module: 'LIBRARY',
+    action: 'READ',
+    resource: 'book',
+    description: 'View library catalog and books',
+  },
+  {
+    module: 'LIBRARY',
+    action: 'CREATE',
+    resource: 'book',
+    description: 'Add books to library catalog',
+  },
+  {
+    module: 'LIBRARY',
+    action: 'UPDATE',
+    resource: 'book',
+    description: 'Manage books and circulation',
   },
 ];
 
@@ -202,6 +274,40 @@ export async function seedRbac(): Promise<void> {
     permMap.get('FEE_READ_fee')?._id,
   ].filter(Boolean);
 
+  const accountantPerms = [
+    permMap.get('FEE_READ_fee')?._id,
+    permMap.get('FEE_CREATE_fee')?._id,
+    permMap.get('FEE_UPDATE_fee')?._id,
+    permMap.get('STUDENT_READ_student')?._id,
+  ].filter(Boolean);
+
+  const receptionistPerms = [
+    permMap.get('STUDENT_READ_student')?._id,
+    permMap.get('ATTENDANCE_READ_attendance')?._id,
+    permMap.get('ADMISSION_READ_admission')?._id,
+  ].filter(Boolean);
+
+  const librarianPerms = [
+    permMap.get('LIBRARY_READ_book')?._id,
+    permMap.get('LIBRARY_CREATE_book')?._id,
+    permMap.get('LIBRARY_UPDATE_book')?._id,
+    permMap.get('STUDENT_READ_student')?._id,
+    permMap.get('TEACHER_READ_teacher')?._id,
+  ].filter(Boolean);
+
+  const storeManagerPerms = [
+    permMap.get('INVENTORY_READ_asset')?._id,
+    permMap.get('INVENTORY_CREATE_asset')?._id,
+    permMap.get('INVENTORY_UPDATE_asset')?._id,
+    permMap.get('INVENTORY_READ_vendor')?._id,
+    permMap.get('INVENTORY_READ_consumable')?._id,
+  ].filter(Boolean);
+
+  const employeePerms = [
+    permMap.get('ATTENDANCE_READ_attendance')?._id,
+    permMap.get('HR_READ_hr')?._id,
+  ].filter(Boolean);
+
   const schoolAdminPerms = Array.from(permMap.values()).map((doc) => doc._id);
 
   const ROLES_DEFINITIONS = [
@@ -245,21 +351,35 @@ export async function seedRbac(): Promise<void> {
       name: 'Accountant',
       description: 'Fee collection and financial manager',
       isSystem: true,
-      permissions: [permMap.get('FEE_READ_fee')?._id].filter(Boolean),
+      permissions: accountantPerms,
     },
     {
       code: 'RECEPTIONIST',
       name: 'Receptionist',
       description: 'Front desk and communication coordinator',
       isSystem: true,
-      permissions: [],
+      permissions: receptionistPerms,
     },
     {
       code: 'LIBRARIAN',
       name: 'Librarian',
       description: 'Library resource manager',
       isSystem: true,
-      permissions: [],
+      permissions: librarianPerms,
+    },
+    {
+      code: 'STORE_MANAGER',
+      name: 'Store Manager',
+      description: 'Inventory and store asset manager',
+      isSystem: true,
+      permissions: storeManagerPerms,
+    },
+    {
+      code: 'EMPLOYEE',
+      name: 'Employee',
+      description: 'General institutional staff employee',
+      isSystem: true,
+      permissions: employeePerms,
     },
     {
       code: 'CONTENT_EDITOR',
@@ -300,6 +420,7 @@ export async function seedRbac(): Promise<void> {
       permissions: [
         permMap.get('HR_READ_hr')?._id,
         permMap.get('HR_UPDATE_hr')?._id,
+        permMap.get('TEACHER_READ_teacher')?._id,
       ].filter(Boolean),
     },
   ];

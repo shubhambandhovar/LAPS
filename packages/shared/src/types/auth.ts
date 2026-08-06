@@ -15,6 +15,15 @@ export type UserRoleCode =
   | 'STORE_MANAGER'
   | 'APPLICANT';
 
+export type AccountStatus =
+  | 'PENDING'
+  | 'ACTIVE'
+  | 'LOCKED'
+  | 'DISABLED'
+  | 'PASSWORD_RESET_REQUIRED'
+  | 'SUSPENDED'
+  | 'INACTIVE';
+
 export interface PermissionRule {
   module: string;
   action: string;
@@ -30,9 +39,18 @@ export interface UserAccount {
   role: UserRoleCode;
   userType: UserRoleCode;
   profileRef?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: AccountStatus;
   lastLoginAt?: string;
+  forcePasswordChange?: boolean;
   permissions?: PermissionRule[];
+}
+
+export interface IdentityAccount extends UserAccount {
+  createdAt?: string;
+  updatedAt?: string;
+  passwordChangedAt?: string;
+  failedLoginAttempts?: number;
+  lockedUntil?: string;
 }
 
 export interface RefreshSessionInfo {
@@ -52,4 +70,19 @@ export interface AuthResponse {
   expiresIn: number;
   sessionId?: string;
   sessionFamilyId?: string;
+  forcePasswordChangeRequired?: boolean;
+}
+
+export interface LoginHistoryEntry {
+  id: string;
+  userId?: string;
+  identifier: string;
+  loginAt: string;
+  logoutAt?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
+  ipAddress?: string;
+  status: 'SUCCESS' | 'FAILURE';
+  failureReason?: string;
 }

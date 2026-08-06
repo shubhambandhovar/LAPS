@@ -135,7 +135,7 @@ export const DocumentGenerator: React.FC = () => {
           ) : recordDetails ? (
             <div id="printable-document" style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
               <DocumentPreview 
-                template={templates?.find(t => t.id === recordDetails.record.templateId)!}
+                template={(templates || []).find(t => t.id === recordDetails.record.templateId) as any}
                 documentRecord={recordDetails.record}
                 masterData={recordDetails.masterData}
               />
@@ -153,7 +153,7 @@ export const DocumentGenerator: React.FC = () => {
       {recordDetails && (
         <div className="hidden print:block">
           <DocumentPreview 
-            template={templates?.find(t => t.id === recordDetails.record.templateId)!}
+            template={(templates || []).find(t => t.id === recordDetails.record.templateId) as any}
             documentRecord={recordDetails.record}
             masterData={recordDetails.masterData}
           />

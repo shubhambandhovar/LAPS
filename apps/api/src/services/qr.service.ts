@@ -26,7 +26,7 @@ export class QrService {
    */
   async generateQrCode(payload: GenerateQrRequest): Promise<QrCodeDocument> {
     // Check if an ACTIVE code already exists for this entity to prevent duplicates
-    let existingQr = await QrCodeModel.findOne({
+    const existingQr = await QrCodeModel.findOne({
       qrType: payload.qrType,
       referenceId: payload.referenceId,
       status: QrStatus.ACTIVE,

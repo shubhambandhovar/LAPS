@@ -17,7 +17,7 @@ export class IdCardService {
   ): Promise<IdCardRecord> {
     
     // Check if an active card already exists
-    let existingCard = await IdCardRecordDb.findOne({
+    const existingCard = await IdCardRecordDb.findOne({
       schoolId,
       referenceId,
       userType,
